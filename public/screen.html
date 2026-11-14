@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>골든벨 무대 화면</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="/common.css">
+<style>
+  /* 프로젝터용: 화면 크기에 맞춰 vmin 단위로 키움 */
+  body { overflow: hidden; }
+  .stage { height: 100%; display: flex; flex-direction: column; padding: 2.4vmin 3vmin; gap: 2vmin; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 2vmin; }
+  .brand { font-family: var(--font-display); color: var(--gold); font-size: 3.6vmin; display: flex; gap: 1vmin; align-items: center; min-width: 0; }
+  .chips { display: flex; gap: 1.4vmin; }
+  .chip { background: var(--stage-2); border: 1px solid var(--line); border-radius: 99px; padding: .6vmin 2vmin; font-size: 2.4vmin; white-space: nowrap; }
+  .chip b { font-family: var(--font-display); font-weight: 400; color: var(--gold); font-size: 3vmin; margin-left: .6vmin; }
+
+  .view { flex: 1; min-height: 0; display: flex; }
+
+  /* 대기실 */
+  #vLobby { gap: 5vmin; align-items: center; }
+  .qrbox { background: #fff; border-radius: 3vmin; padding: 2.4vmin; display: flex; flex-direction: column; align-items: center; gap: 1.2vmin; flex: none; box-shadow: 0 2vmin 6vmin rgba(0,0,0,.4); }
+  .qrbox img { width: 52vmin; height: 52vmin; display: block; }
+  .qrbox .url { color: #10122b; font-weight: 700; font-size: 2.4vmin; word-break: break-all; text-align: center; max-width: 52vmin; }
+  .lobby-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3vmin; }
+  .lobby-side h1 { font-size: 11vmin; line-height: 1.05; }
+  .lobby-side h1 em { font-style: normal; color: var(--gold); }
+  .lobby-side .how { font-size: 3vmin; color: var(--ink-dim); margin: 0; }
+  .count-big { font-family: var(--font-display); font-size: 5vmin; }
+  .count-big b { color: var(--gold); font-weight: 400; font-size: 9vmin; font-variant-numeric: tabular-nums; }
+  .names { display: flex; flex-wrap: wrap; gap: 1vmin; max-height: 28vmin; overflow: hidden; align-content: flex-start; }
+  .names span { background: var(--stage-2); border: 1px solid var(--line); padding: .5vmin 1.6vmin; border-radius: 99px; font-size: 2.4vmin; animation: in .4s ease; }
+  @keyframes in { from { transform: translateY(1vmin); opacity: 0; } }
+
+  /* 문제 */
+  #vQuestion { flex-direction: column; gap: 2.4vmin; }
+  .qrow { display: flex; gap: 3vmin; align-items: center; }
+  .qno { font-family: var(--font-display); color: var(--gold); font-size: 5vmin; flex: none; }
+  .qtext { flex: 1; min-width: 0; font-size: 5.4vmin; font-weight: 900; line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; }
+  .clock { position: relative; width: 17vmin; height: 17vmin; flex: none; }
+  .clock svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .clock .num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 7vmin; font-variant-numeric: tabular-nums; }
+  .clock.hurry .num { color: var(--bad); }
+  .opts { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2vmin; }
+  .opts.n3 .opt:last-child, .opts.n5 .opt:last-child { grid-column: 1 / -1; }
+  .opt { position: relative; overflow: hidden; display: flex; align-items: center; gap: 2vmin; padding: 2vmin 3vmin; border-radius: 2.4vmin; background: color-mix(in srgb, var(--c) 80%, #000); font-size: 4.6vmin; font-weight: 700; border: .6vmin solid transparent; transition: opacity .3s, transform .3s; word-break: keep-all; overflow-wrap: anywhere; }
+  .opt .opt-badge { font-size: 4vmin; position: relative; }
+  .opt .fill { position: absolute; inset: 0 auto 0 0; background: rgba(255,255,255,.16); width: 0; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+  .opt .t { position: relative; flex: 1; min-width: 0; }
+  .opt .cnt { position: relative; font-family: var(--font-display); font-weight: 400; font-size: 5vmin; }
+  .revealed .opt:not(.correct) { opacity: .35; }
+  .revealed .opt.correct { border-color: var(--gold); transform: scale(1.02); box-shadow: 0 0 6vmin rgba(244,197,66,.45); }
+  .status { font-size: 3vmin; text-align: center; min-height: 4vmin; }
+  .status b { color: var(--gold); font-family: var(--font-display); font-weight: 400; }
+  .outlist { font-size: 2.4vmin; color: var(--ink-dim); text-align: center; max-height: 7vmin; overflow: hidden; }
+
+  /* 종료 */
+  #vEnd { flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; text-align: center; }
+  #vEnd svg { width: 22vmin; height: 22vmin; animation: ring 1.2s ease-in-out infinite; transform-origin: 50% 10%; filter: drop-shadow(0 0 5vmin rgba(244,197,66,.5)); }
+  @keyframes ring { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+  #vEnd h1 { font-size: 14vmin; color: var(--gold); }
+  .winners { display: flex; flex-wrap: wrap; justify-content: center; gap: 2vmin; max-width: 90vw; }
+  .winners span { font-family: var(--font-display); font-size: 6vmin; background: var(--stage-2); border: .4vmin solid var(--gold); padding: 1vmin 4vmin; border-radius: 99px; }
+
+  .msg { position: fixed; left: 50%; bottom: 3vmin; transform: translateX(-50%); background: var(--gold); color: #241a00; font-weight: 900; font-size: 3vmin; padding: 1vmin 3vmin; border-radius: 99px; }
+  .sound { position: fixed; right: 2vmin; bottom: 2vmin; font-size: 13px; opacity: .6; }
+  .sound:hover { opacity: 1; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bell" viewBox="0 0 64 64">
+    <path d="M32 4a4 4 0 0 1 4 4v2.4c9.3 1.9 16 10 16 19.6v12l5 7.5a2 2 0 0 1-1.7 3.1H8.7A2 2 0 0 1 7 49.5L12 42V30c0-9.6 6.7-17.7 16-19.6V8a4 4 0 0 1 4-4Z" fill="#f4c542"/>
+    <path d="M20 30c0-6 4-11 10-12" stroke="#fff6c9" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/>
+    <circle cx="32" cy="57" r="5" fill="#c8951c"/>
+  </symbol>
+</svg>
+<div class="stage">
+  <div class="top">
+    <div class="brand"><svg class="bell"><use href="#bell"/></svg><span id="evt">골든벨</span></div>
+    <div class="chips">
+      <span class="chip">참가<b class="tabular" id="cTotal">0</b></span>
+      <span class="chip">생존<b class="tabular" id="cAlive">0</b></span>
+    </div>
+  </div>
+
+  <section class="view" id="vLobby">
+    <div class="qrbox">
+      <img id="qr" alt="참가용 QR 코드">
+      <div class="url" id="url"></div>
+    </div>
+    <div class="lobby-side">
+      <h1>QR 찍고<br><em>골든벨</em> 도전!</h1>
+      <p class="how">휴대폰 카메라로 QR을 찍어 접속 → 닉네임 입력 → 대기</p>
+      <div class="count-big"><b id="lCount">0</b> 명 입장</div>
+      <div class="names" id="names"></div>
+    </div>
+  </section>
+
+  <section class="view hidden" id="vQuestion">
+    <div class="qrow">
+      <div class="qno" id="qNo"></div>
+      <div class="qtext" id="qText"></div>
+      <div class="clock" id="clock">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--stage-3)" stroke-width="9"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="var(--gold)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="0"/></svg>
+        <div class="num" id="clockNum"></div>
+      </div>
+    </div>
+    <div class="opts" id="opts"></div>
+    <div class="status" id="status"></div>
+    <div class="outlist" id="outlist"></div>
+  </section>
+
+  <section class="view hidden" id="vEnd">
+    <svg><use href="#bell"/></svg>
+    <h1 id="endTitle">골든벨!</h1>
+    <div class="winners" id="winners"></div>
+  </section>
+</div>
+<div class="msg hidden" id="msg"></div>
+<button class="btn btn-ghost sound" id="soundBtn" type="button">소리 켜기</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const socket = io({ transports: ['websocket', 'polling'] });
+let S = null, endAt = 0, optKey = '', lastPhase = '', lastSec = -1, lastUrl = '';
+
+socket.on('connect', () => socket.emit('screen:hello'));
+socket.on('state', st => {
+  const prevPhase = lastPhase;
+  S = st; endAt = Date.now() + (st.timeLeft || 0);
+  render(st);
+  if (st.phase !== prevPhase && prevPhase) {
+    if (st.phase === 'revealed') sfx.reveal();
+    if (st.phase === 'ended') sfx.bell();
+    if (st.phase === 'open') sfx.start();
+  }
+  lastPhase = st.phase;
+});
+
+function show(v) { for (const id of ['vLobby','vQuestion','vEnd']) $(id).classList.toggle('hidden', id !== v); }
+
+function render(st) {
+  $('evt').textContent = st.title;
+  document.title = st.title + ' 무대 화면';
+  $('cTotal').textContent = st.total;
+  $('cAlive').textContent = st.aliveCount;
+  $('msg').textContent = st.message || '';
+  $('msg').classList.toggle('hidden', !st.message);
+
+  if (st.phase === 'lobby' || !st.question) {
+    show('vLobby');
+    if (st.joinUrl !== lastUrl) { lastUrl = st.joinUrl; $('qr').src = '/qr.svg?u=' + encodeURIComponent(st.joinUrl); }
+    $('url').textContent = st.joinUrl.replace(/\/$/, '');
+    $('lCount').textContent = st.total;
+    const names = st.survivors || [];
+    const box = $('names');
+    const have = new Set([...box.children].map(n => n.textContent));
+    const want = new Set(names);
+    [...box.children].forEach(n => { if (!want.has(n.textContent)) n.remove(); });
+    names.forEach(n => { if (!have.has(n)) { const s = document.createElement('span'); s.textContent = n; box.appendChild(s); } });
+    return;
+  }
+  if (st.phase === 'ended') {
+    show('vEnd');
+    const w = st.survivors || [];
+    $('endTitle').textContent = w.length ? '골든벨!' : '게임 종료';
+    $('winners').innerHTML = '';
+    w.forEach(n => { const s = document.createElement('span'); s.textContent = n; $('winners').appendChild(s); });
+    return;
+  }
+  show('vQuestion');
+  const q = st.question;
+  $('qNo').textContent = 'Q' + (st.qIndex + 1);
+  $('qText').textContent = q.text;
+  const box = $('opts');
+  const key = st.qIndex + '|' + q.options.join('|');
+  if (key !== optKey) {
+    optKey = key;
+    box.innerHTML = '';
+    box.className = 'opts n' + q.options.length;
+    q.options.forEach((t, i) => {
+      const d = document.createElement('div');
+      d.className = 'opt o' + i;
+      d.innerHTML = '<div class="fill"></div><span class="opt-badge">' + (i + 1) + '</span><span class="t"></span><span class="cnt"></span>';
+      d.querySelector('.t').textContent = t;
+      box.appendChild(d);
+    });
+  }
+  const revealed = st.phase === 'revealed';
+  box.classList.toggle('revealed', revealed);
+  const dist = st.distribution || [];
+  const max = Math.max(1, ...dist);
+  [...box.children].forEach((d, i) => {
+    d.classList.toggle('correct', revealed && q.answer === i);
+    d.querySelector('.cnt').textContent = revealed ? (dist[i] || 0) + '명' : '';
+    d.querySelector('.fill').style.width = revealed ? ((dist[i] || 0) / max * 100) + '%' : '0';
+  });
+  if (st.phase === 'open') $('status').innerHTML = `제출 <b>${st.answered}</b> / ${st.contenders}명`;
+  else if (st.phase === 'locked') $('status').innerHTML = `<b>마감!</b> 제출 ${st.answered} / ${st.contenders}명 · 정답 공개 대기`;
+  else if (revealed) $('status').innerHTML = `정답 <b>${q.answer + 1}번</b> · 통과 <b>${st.aliveCount}</b>명 · 탈락 <b>${st.eliminatedNow.length}</b>명`;
+  $('outlist').textContent = revealed && st.eliminatedNow.length ? '탈락: ' + st.eliminatedNow.join(', ') : '';
+  tick();
+}
+
+function tick() {
+  if (!S || !S.question || S.phase === 'ended') return;
+  const total = (S.question.time || 1) * 1000;
+  const left = S.phase === 'open' ? Math.max(0, endAt - Date.now()) : 0;
+  const sec = Math.ceil(left / 1000);
+  $('clockNum').textContent = S.phase === 'open' ? sec : (S.phase === 'revealed' ? '✓' : '0');
+  $('clock').classList.toggle('hurry', S.phase === 'open' && sec <= 5);
+  $('arc').style.strokeDashoffset = 276.46 * (1 - (S.phase === 'open' ? left / total : 0));
+  if (S.phase === 'open' && sec !== lastSec && sec <= 5 && sec > 0) sfx.tick();
+  lastSec = sec;
+}
+setInterval(tick, 100);
+
+// 효과음 (브라우저 정책상 버튼을 한 번 눌러야 재생됨)
+const sfx = (() => {
+  let ctx = null;
+  function tone(freq, dur, type = 'sine', vol = .2, when = 0) {
+    if (!ctx) return;
+    const t = ctx.currentTime + when;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur);
+  }
+  return {
+    enable() { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); ctx.resume(); },
+    tick() { tone(880, .08, 'square', .08); },
+    start() { tone(523, .15, 'triangle', .2); tone(784, .25, 'triangle', .2, .12); },
+    reveal() { tone(392, .2, 'sawtooth', .12); tone(523, .2, 'sawtooth', .12, .15); tone(659, .5, 'sawtooth', .12, .3); },
+    bell() { [0, .5, 1].forEach(w => { tone(1318, 1.6, 'sine', .25, w); tone(2637, 1.2, 'sine', .08, w); }); }
+  };
+})();
+$('soundBtn').addEventListener('click', () => { sfx.enable(); sfx.start(); $('soundBtn').textContent = '소리 켜짐'; });
+</script>
+</body>
+</html>

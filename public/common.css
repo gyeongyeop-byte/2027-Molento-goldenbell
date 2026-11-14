@@ -1,0 +1,68 @@
+/* Layout: 무대 조명 아래의 남색 무대 + 금빛 종. 보기 색은 번호와 함께 써서 색만으로 구분하지 않음 */
+:root {
+  --stage: #11133a;
+  --stage-2: #1a1d4f;
+  --stage-3: #262a68;
+  --line: rgba(255, 255, 255, .12);
+  --ink: #f5f3ec;
+  --ink-dim: #a9abd0;
+  --gold: #f4c542;
+  --gold-deep: #c8951c;
+  --ok: #3ccf8e;
+  --bad: #ff5c6c;
+  --opt-0: #ff6b57;
+  --opt-1: #3aa0ff;
+  --opt-2: #2fc48d;
+  --opt-3: #a678ff;
+  --opt-4: #f29d38;
+  --font-display: "Black Han Sans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --radius: 14px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: radial-gradient(120% 80% at 50% -10%, var(--stage-3) 0%, var(--stage) 55%) fixed, var(--stage);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3, .display { font-family: var(--font-display); font-weight: 400; letter-spacing: .01em; text-wrap: balance; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.tabular { font-variant-numeric: tabular-nums; }
+.dim { color: var(--ink-dim); }
+.hidden { display: none !important; }
+
+.btn {
+  border: 0; border-radius: 10px; padding: .7em 1.1em; font-weight: 700;
+  background: var(--stage-3); color: var(--ink);
+  transition: transform .08s ease, filter .15s ease;
+}
+.btn:active { transform: scale(.97); }
+.btn:hover { filter: brightness(1.12); }
+.btn:disabled { opacity: .4; cursor: not-allowed; filter: none; transform: none; }
+.btn-gold { background: var(--gold); color: #241a00; }
+.btn-bad { background: var(--bad); color: #fff; }
+.btn-ok { background: var(--ok); color: #062a1a; }
+.btn-ghost { background: transparent; border: 1px solid var(--line); }
+
+.opt-badge {
+  display: inline-grid; place-items: center; flex: none;
+  width: 1.9em; height: 1.9em; border-radius: 50%;
+  font-family: var(--font-display); background: rgba(0,0,0,.25); color: #fff;
+}
+.o0 { --c: var(--opt-0); } .o1 { --c: var(--opt-1); } .o2 { --c: var(--opt-2); } .o3 { --c: var(--opt-3); } .o4 { --c: var(--opt-4); }
+
+.bell { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

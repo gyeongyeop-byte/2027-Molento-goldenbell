@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: goldenbell
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: EVENT_TITLE
+        value: 골든벨

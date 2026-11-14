@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>골든벨 관리자</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="/common.css">
+<style>
+  body { font-size: 15px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 40px); display: flex; flex-direction: column; gap: 16px; }
+  #app { display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+  .brand { font-family: var(--font-display); font-size: 22px; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+  .brand small { font-family: var(--font-body); font-size: 12px; color: var(--ink-dim); font-weight: 700; background: var(--stage-2); border: 1px solid var(--line); padding: 2px 8px; border-radius: 99px; }
+  .links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .links a { color: var(--ink); text-decoration: none; font-size: 13px; border: 1px solid var(--line); padding: 6px 12px; border-radius: 99px; }
+  .links a:hover { border-color: var(--gold); }
+
+  .panel { background: color-mix(in srgb, var(--stage-2) 85%, transparent); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .panel h2 { font-size: 18px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .spacer { flex: 1; }
+
+  #login { max-width: 380px; width: 100%; margin: 12vh auto 0; }
+  #login input { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--stage); width: 100%; font-size: 17px; }
+  .err { color: var(--bad); font-size: 14px; margin: 0; min-height: 1.3em; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tabs button { background: none; border: 0; padding: 10px 14px; font-weight: 700; color: var(--ink-dim); border-bottom: 3px solid transparent; white-space: nowrap; }
+  .tabs button[aria-selected=true] { color: var(--gold); border-bottom-color: var(--gold); }
+
+  .grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stat { background: var(--stage); border-radius: 10px; padding: 10px 4px; text-align: center; }
+  .stat b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 26px; color: var(--gold); line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 12px; color: var(--ink-dim); }
+  .phase { font-size: 12px; font-weight: 900; padding: 3px 10px; border-radius: 99px; background: var(--stage-3); }
+  .phase.open { background: var(--ok); color: #062a1a; }
+  .phase.locked { background: var(--opt-4); color: #2a1600; }
+  .phase.revealed { background: var(--gold); color: #241a00; }
+  .phase.ended { background: var(--bad); color: #fff; }
+  .qcur { font-size: 19px; font-weight: 900; word-break: keep-all; overflow-wrap: anywhere; }
+  .timer { font-family: var(--font-display); font-size: 30px; font-variant-numeric: tabular-nums; }
+  .olist { display: grid; gap: 6px; }
+  .orow { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--stage); overflow: hidden; border: 2px solid transparent; }
+  .orow .fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--c) 35%, transparent); transition: width .4s; }
+  .orow > :not(.fill) { position: relative; }
+  .orow .opt-badge { background: var(--c); width: 1.7em; height: 1.7em; font-size: 14px; }
+  .orow .t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .orow .n { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .orow.correct { border-color: var(--gold); }
+  .orow.correct .t::after { content: " 정답"; color: var(--gold); font-size: 12px; font-weight: 900; }
+  .actions { display: grid; gap: 8px; }
+  .actions .btn { padding: 14px; font-size: 17px; }
+  .actions .row .btn { flex: 1; font-size: 15px; padding: 10px; }
+  select, .field { padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--stage); }
+  .toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); background: var(--ink); color: var(--stage); font-weight: 700; padding: 10px 18px; border-radius: 99px; z-index: 10; max-width: calc(100% - 32px); text-align: center; }
+  .toast.bad { background: var(--bad); color: #fff; }
+
+  .plist { display: grid; gap: 6px; max-height: 70vh; overflow-y: auto; }
+  .prow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--stage); border-radius: 10px; flex-wrap: wrap; }
+  .prow .nm { font-weight: 700; flex: 1; min-width: 6em; overflow-wrap: anywhere; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-dim); flex: none; }
+  .dot.on { background: var(--ok); }
+  .prow .meta { font-size: 12px; color: var(--ink-dim); white-space: nowrap; }
+  .prow .btn { padding: 5px 10px; font-size: 13px; }
+  .tag { font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .tag.alive { background: color-mix(in srgb, var(--ok) 25%, transparent); color: var(--ok); }
+  .tag.out { background: color-mix(in srgb, var(--bad) 25%, transparent); color: var(--bad); }
+
+  .qcards { display: grid; gap: 10px; }
+  .qcard { background: var(--stage); border-radius: 12px; padding: 12px; display: grid; gap: 8px; border: 1px solid var(--line); }
+  .qcard.current { border-color: var(--gold); }
+  .qcard .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .qcard .head b { font-family: var(--font-display); font-weight: 400; color: var(--gold); font-size: 18px; }
+  .qcard textarea, .qcard input[type=text] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--stage-2); resize: vertical; }
+  .ed-opt { display: flex; gap: 8px; align-items: center; }
+  .ed-opt input[type=radio] { width: 20px; height: 20px; accent-color: var(--gold); flex: none; }
+  .ed-opt .opt-badge { background: var(--c); width: 1.7em; height: 1.7em; font-size: 13px; }
+  .ed-opt input[type=text] { flex: 1; min-width: 0; }
+  .mini { padding: 5px 9px !important; font-size: 13px !important; }
+  .dirty { color: var(--opt-4); font-weight: 700; font-size: 13px; }
+  textarea.bulk { width: 100%; min-height: 260px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--stage); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
+  .help { font-size: 13px; color: var(--ink-dim); margin: 0; line-height: 1.6; }
+  code { background: var(--stage); padding: 1px 5px; border-radius: 4px; }
+  .switch { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+  .switch input { width: 22px; height: 22px; accent-color: var(--gold); }
+  hr { border: 0; border-top: 1px solid var(--line); width: 100%; margin: 4px 0; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bell" viewBox="0 0 64 64">
+    <path d="M32 4a4 4 0 0 1 4 4v2.4c9.3 1.9 16 10 16 19.6v12l5 7.5a2 2 0 0 1-1.7 3.1H8.7A2 2 0 0 1 7 49.5L12 42V30c0-9.6 6.7-17.7 16-19.6V8a4 4 0 0 1 4-4Z" fill="#f4c542"/>
+    <circle cx="32" cy="57" r="5" fill="#c8951c"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <form class="panel" id="login" autocomplete="off">
+    <div class="brand"><svg class="bell"><use href="#bell"/></svg>골든벨 관리자</div>
+    <label for="pw" class="dim">관리자 비밀번호</label>
+    <input type="password" id="pw" required autofocus>
+    <p class="err" id="loginErr" role="alert"></p>
+    <button class="btn btn-gold" type="submit">들어가기</button>
+  </form>
+
+  <div id="app" class="hidden">
+    <header>
+      <div class="brand"><svg class="bell"><use href="#bell"/></svg><span id="evt">골든벨</span> 관리자 <small id="conn">연결됨</small></div>
+      <div class="links">
+        <a href="/screen" target="_blank" rel="noopener">무대 화면 열기</a>
+        <a href="/" target="_blank" rel="noopener">참가자 화면 미리보기</a>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="tRun" id="tabRun">진행</button>
+      <button role="tab" aria-selected="false" data-tab="tPlayers" id="tabPlayers">참가자</button>
+      <button role="tab" aria-selected="false" data-tab="tQuestions" id="tabQuestions">문제 편집</button>
+      <button role="tab" aria-selected="false" data-tab="tSettings" id="tabSettings">설정</button>
+    </nav>
+
+    <section id="tRun" class="grid">
+      <div class="panel">
+        <div class="row">
+          <span class="phase" id="phase"></span>
+          <b id="qPos" class="tabular"></b>
+          <span class="spacer"></span>
+          <span class="timer" id="timer"></span>
+        </div>
+        <div class="qcur" id="qCur"></div>
+        <div class="olist" id="olist"></div>
+        <div class="stats">
+          <div class="stat"><b id="sTotal">0</b><span>참가</span></div>
+          <div class="stat"><b id="sAlive">0</b><span>생존</span></div>
+          <div class="stat"><b id="sAns">0</b><span>제출</span></div>
+          <div class="stat"><b id="sOut">0</b><span>이번 탈락</span></div>
+        </div>
+        <p class="help" id="outNames"></p>
+      </div>
+
+      <div class="panel">
+        <h2>진행 통제</h2>
+        <div class="actions" id="actions"></div>
+        <hr>
+        <label class="dim" for="jump">특정 문제로 바로 시작</label>
+        <div class="row">
+          <select id="jump" style="flex:1;min-width:0"></select>
+          <button class="btn" id="jumpBtn" type="button">시작</button>
+        </div>
+        <label class="dim" for="msgIn">무대·참가자 화면 공지</label>
+        <div class="row">
+          <input class="field" id="msgIn" maxlength="120" placeholder="예: 5분 쉬고 갑니다" style="flex:1;min-width:0">
+          <button class="btn" id="msgBtn" type="button">표시</button>
+          <button class="btn btn-ghost" id="msgClear" type="button">지우기</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tPlayers" class="panel hidden">
+      <div class="row">
+        <h2>참가자 <span id="pCount" class="dim tabular"></span></h2>
+        <span class="spacer"></span>
+        <input class="field" id="pSearch" placeholder="이름 검색" style="width:10em">
+        <select id="pFilter">
+          <option value="all">전체</option>
+          <option value="alive">생존</option>
+          <option value="out">탈락</option>
+          <option value="offline">연결 끊김</option>
+        </select>
+      </div>
+      <div class="row">
+        <button class="btn btn-ok" type="button" id="reviveLast">이번 문제 탈락자 부활</button>
+        <button class="btn btn-ok" type="button" id="reviveAll">탈락자 전원 부활</button>
+      </div>
+      <div class="plist" id="plist"></div>
+    </section>
+
+    <section id="tQuestions" class="panel hidden">
+      <div class="row">
+        <h2>문제 편집 <span id="qCount" class="dim tabular"></span></h2>
+        <span class="dirty hidden" id="dirty">저장 안 됨</span>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" id="revertQ" type="button">되돌리기</button>
+        <button class="btn btn-gold" id="saveQ" type="button">저장</button>
+      </div>
+      <p class="help">보기는 2~5개(O/X 문제는 2개). 동그라미를 눌러 정답을 고릅니다. 저장해야 게임에 반영되고, 서버의 <code>questions.json</code>에도 기록됩니다.</p>
+      <div class="qcards" id="qcards"></div>
+      <div class="row">
+        <button class="btn" id="addQ" type="button">+ 문제 추가</button>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost" id="bulkToggle" type="button">텍스트로 한 번에 입력</button>
+      </div>
+      <div id="bulkBox" class="hidden" style="display:grid;gap:8px">
+        <p class="help">
+          문제마다 빈 줄로 구분합니다. 첫 줄은 질문, 다음 줄부터 보기, 정답 보기 앞에 <code>*</code>를 붙입니다. <code>시간: 20</code> 줄은 선택(초).<br>
+          예)<br><code>우리 학교가 개교한 해는?</code><br><code>1945</code><br><code>*1951</code><br><code>1960</code><br><code>시간: 20</code>
+        </p>
+        <textarea class="bulk" id="bulk" spellcheck="false"></textarea>
+        <div class="row">
+          <button class="btn" id="bulkExport" type="button">현재 문제 불러오기</button>
+          <span class="spacer"></span>
+          <button class="btn btn-gold" id="bulkApply" type="button">이 내용으로 교체</button>
+        </div>
+        <p class="err" id="bulkErr"></p>
+      </div>
+    </section>
+
+    <section id="tSettings" class="panel hidden">
+      <h2>행사 이름</h2>
+      <div class="row">
+        <input class="field" id="titleIn" maxlength="30" style="flex:1;min-width:0" placeholder="예: 2026 신입생 MT 골든벨">
+        <button class="btn" id="titleBtn" type="button">적용</button>
+      </div>
+      <p class="help">참가자 화면, 무대 화면 상단에 표시됩니다.</p>
+      <hr>
+      <h2>입장 설정</h2>
+      <label class="switch"><input type="checkbox" id="joinOpen"> 새 참가자 입장 허용</label>
+      <p class="help">게임 도중 입장한 사람은 관전(탈락) 상태로 들어옵니다. 참가자 탭에서 부활시킬 수 있습니다.</p>
+      <label class="dim" for="joinUrl">QR 코드 주소</label>
+      <div class="row">
+        <input class="field" id="joinUrl" style="flex:1;min-width:0" placeholder="비워두면 자동">
+        <button class="btn" id="joinUrlBtn" type="button">적용</button>
+      </div>
+      <p class="help">자동 주소: <code id="autoUrl"></code><br>노트북에서 실행 중이라면 같은 와이파이의 휴대폰만 접속됩니다. 인터넷 주소(배포 주소나 터널 주소)를 쓰면 여기에 넣으세요.</p>
+      <hr>
+      <h2>초기화</h2>
+      <div class="row">
+        <button class="btn" type="button" id="resetGame">게임 리셋 (참가자 유지, 전원 생존·처음부터)</button>
+        <button class="btn btn-bad" type="button" id="clearPlayers">참가자 전원 내보내기</button>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="toast hidden" id="toast" role="status"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const ss = {
+  get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, v); } catch {} }
+};
+const socket = io({ transports: ['websocket', 'polling'] });
+let A = null, endAt = 0;
+let draft = null, dirty = false, lastQJson = '', lastActKey = '';
+
+// ---------- 공통 ----------
+let toastT;
+function toast(text, bad) {
+  const t = $('toast');
+  t.textContent = text; t.className = 'toast' + (bad ? ' bad' : '');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.add('hidden'), 2600);
+}
+function cmd(type, args = {}) {
+  return new Promise(res => socket.emit('admin:cmd', { type, ...args }, r => {
+    if (!r.ok) toast(r.error, true); else if (r.message) toast(r.message);
+    res(r);
+  }));
+}
+// 두 번 눌러 확인하는 버튼 (브라우저 확인창 대신)
+function confirmClick(btn, label, fn) {
+  if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = btn.dataset.orig; fn(); return; }
+  btn.dataset.orig = btn.textContent; btn.dataset.armed = '1'; btn.textContent = label;
+  setTimeout(() => { if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = btn.dataset.orig; } }, 3000);
+}
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+// ---------- 로그인 ----------
+function auth(payload) {
+  socket.emit('admin:auth', payload, r => {
+    if (r.ok) {
+      ss.set('gb_admin', r.token);
+      $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    } else {
+      $('loginErr').textContent = payload.password ? r.error : '';
+    }
+  });
+}
+$('login').addEventListener('submit', e => { e.preventDefault(); auth({ password: $('pw').value }); });
+socket.on('connect', () => {
+  $('conn').textContent = '연결됨';
+  const t = ss.get('gb_admin');
+  if (t) auth({ token: t });
+});
+socket.on('disconnect', () => { $('conn').textContent = '연결 끊김 — 재연결 중'; });
+
+// ---------- 탭 ----------
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.setAttribute('aria-selected', x === b));
+  for (const id of ['tRun','tPlayers','tQuestions','tSettings']) $(id).classList.toggle('hidden', id !== b.dataset.tab);
+}));
+
+// ---------- 상태 ----------
+socket.on('admin:state', st => {
+  A = st; endAt = Date.now() + (st.timeLeft || 0);
+  $('evt').textContent = st.title;
+  document.title = st.title + ' 관리자';
+  const qj = JSON.stringify(st.questions) + '|' + st.qIndex + st.phase;
+  if (!dirty && qj !== lastQJson) { lastQJson = qj; draft = JSON.parse(JSON.stringify(st.questions)); renderEditor(); }
+  renderRun(); renderPlayers(); renderSettings();
+});
+
+const PHASE = { lobby: '대기', open: '답 받는 중', locked: '마감', revealed: '정답 공개', ended: '종료' };
+
+function renderRun() {
+  const st = A;
+  $('phase').textContent = PHASE[st.phase];
+  $('phase').className = 'phase ' + st.phase;
+  const q = st.qIndex >= 0 ? st.questions[st.qIndex] : null;
+  $('qPos').textContent = st.qIndex >= 0 ? `Q${st.qIndex + 1} / ${st.qTotal}` : `총 ${st.qTotal}문제`;
+  $('qCur').textContent = q ? q.text : '아직 시작하지 않았습니다. 무대 화면에 QR을 띄우고 참가자를 받으세요.';
+  const ol = $('olist'); ol.innerHTML = '';
+  if (q) {
+    const dist = st.liveDistribution || [];
+    const max = Math.max(1, ...dist);
+    q.options.forEach((t, i) => {
+      const d = document.createElement('div');
+      d.className = 'orow o' + i + (i === q.answer ? ' correct' : '');
+      d.innerHTML = `<div class="fill" style="width:${(dist[i] || 0) / max * 100}%"></div><span class="opt-badge">${i + 1}</span><span class="t"></span><span class="n">${dist[i] || 0}명</span>`;
+      d.querySelector('.t').textContent = t;
+      ol.appendChild(d);
+    });
+  }
+  $('sTotal').textContent = st.total;
+  $('sAlive').textContent = st.aliveCount;
+  $('sAns').textContent = st.qIndex >= 0 ? `${st.answered}/${st.contenders}` : '-';
+  $('sOut').textContent = st.phase === 'revealed' ? st.eliminatedNow.length : '-';
+  $('outNames').textContent = st.phase === 'revealed' && st.eliminatedNow.length ? '이번 탈락: ' + st.eliminatedNow.join(', ') : (st.message || '');
+
+  // 진행 버튼은 상태가 바뀔 때만 다시 그림 (두 번 눌러 확인 버튼이 풀리지 않도록)
+  const hasNext = st.qIndex + 1 < st.qTotal;
+  const actKey = [st.phase, st.qIndex, st.qTotal, st.eliminatedNow.length, st.aliveCount === st.total].join('|');
+  if (actKey !== lastActKey) { lastActKey = actKey; renderActions(st, hasNext); }
+  renderJump(st);
+  tick();
+}
+
+function renderActions(st, hasNext) {
+  const acts = $('actions'); acts.innerHTML = '';
+  const add = (label, cls, fn, disabled) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + cls; b.textContent = label;
+    b.disabled = !!disabled; b.addEventListener('click', () => fn(b)); acts.appendChild(b); return b;
+  };
+  const rowOf = (...btns) => { const r = document.createElement('div'); r.className = 'row'; btns.forEach(b => r.appendChild(b)); acts.appendChild(r); };
+  if (st.phase === 'lobby') {
+    add(st.qIndex < 0 ? '1번 문제 시작' : `Q${st.qIndex + 2} 시작`, 'btn-gold', () => cmd('start'), !hasNext);
+  } else if (st.phase === 'open') {
+    add('지금 마감', 'btn-gold', () => cmd('lock'));
+    rowOf(add('+10초', '', () => cmd('addTime', { seconds: 10 })), add('+30초', '', () => cmd('addTime', { seconds: 30 })));
+  } else if (st.phase === 'locked') {
+    add('정답 공개 (오답자 탈락)', 'btn-gold', () => cmd('reveal'));
+    add('10초 더 받기', '', () => cmd('addTime', { seconds: 10 }));
+  } else if (st.phase === 'revealed') {
+    add(hasNext ? `다음 문제 (Q${st.qIndex + 2}) 시작` : '마지막 문제였습니다', 'btn-gold', () => cmd('start'), !hasNext);
+    rowOf(
+      add(`이번 탈락자 부활 (${st.eliminatedNow.length})`, 'btn-ok', () => cmd('revive', { mode: 'last' }), !st.eliminatedNow.length),
+      add('전원 부활', 'btn-ok', () => cmd('revive', { mode: 'all' }), st.aliveCount === st.total)
+    );
+    rowOf(
+      add('대기 화면', '', () => cmd('toLobby')),
+      add('게임 종료 · 우승 발표', 'btn-bad', b => confirmClick(b, '한 번 더 누르면 종료', () => cmd('end')))
+    );
+  } else if (st.phase === 'ended') {
+    add('대기 화면으로', '', () => cmd('toLobby'));
+    add('게임 리셋 (처음부터)', 'btn-bad', b => confirmClick(b, '한 번 더 누르면 리셋', () => cmd('resetGame')));
+  }
+}
+
+function renderJump(st) {
+  const j = $('jump'); const keep = j.value;
+  const html = st.questions.map((q, i) => `<option value="${i}">Q${i + 1}. ${escapeHtml(q.text.slice(0, 40))}</option>`).join('');
+  if (j.dataset.html === html) return;
+  j.dataset.html = html; j.innerHTML = html;
+  if (keep && +keep < st.questions.length) j.value = keep; else j.value = String(Math.max(0, Math.min(st.qIndex + 1, st.questions.length - 1)));
+}
+$('jumpBtn').addEventListener('click', () => confirmClick($('jumpBtn'), '정말 시작?', () => cmd('start', { index: +$('jump').value })));
+$('msgBtn').addEventListener('click', () => cmd('setMessage', { text: $('msgIn').value }));
+$('msgClear').addEventListener('click', () => { $('msgIn').value = ''; cmd('setMessage', { text: '' }); });
+
+function tick() {
+  if (!A) return;
+  const left = A.phase === 'open' ? Math.max(0, endAt - Date.now()) : 0;
+  $('timer').textContent = A.phase === 'open' ? Math.ceil(left / 1000) + '초' : '';
+}
+setInterval(tick, 250);
+
+// ---------- 참가자 ----------
+function renderPlayers() {
+  const st = A;
+  const qq = $('pSearch').value.trim();
+  const f = $('pFilter').value;
+  const list = st.players.filter(p =>
+    (!qq || p.name.includes(qq)) &&
+    (f === 'all' || (f === 'alive' && p.alive) || (f === 'out' && !p.alive) || (f === 'offline' && !p.connected)));
+  $('pCount').textContent = `${st.aliveCount} 생존 / ${st.total}명`;
+  const box = $('plist');
+  if (box.querySelector('[data-armed]')) return;
+  box.innerHTML = list.length ? '' : '<p class="help">아직 입장한 참가자가 없습니다. 무대 화면의 QR로 들어옵니다.</p>';
+  for (const p of list) {
+    const r = document.createElement('div'); r.className = 'prow';
+    const ans = p.answer != null ? `${p.answer + 1}번` : (p.contender && st.qIndex >= 0 ? '미제출' : '-');
+    r.innerHTML = `<span class="dot ${p.connected ? 'on' : ''}" title="${p.connected ? '접속 중' : '연결 끊김'}"></span>
+      <span class="nm"></span>
+      <span class="tag ${p.alive ? 'alive' : 'out'}">${p.alive ? '생존' : '탈락' + (p.eliminatedAt != null ? ` Q${p.eliminatedAt + 1}` : '')}</span>
+      <span class="meta">답 ${ans} · 정답 ${p.correctCount}</span>`;
+    r.querySelector('.nm').textContent = p.name;
+    const tog = document.createElement('button'); tog.type = 'button';
+    tog.className = 'btn ' + (p.alive ? 'btn-ghost' : 'btn-ok'); tog.textContent = p.alive ? '탈락 처리' : '부활';
+    tog.addEventListener('click', () => p.alive ? cmd('eliminate', { id: p.id }) : cmd('revive', { ids: [p.id] }));
+    const kick = document.createElement('button'); kick.type = 'button'; kick.className = 'btn btn-ghost'; kick.textContent = '퇴장';
+    kick.addEventListener('click', () => confirmClick(kick, '확인', () => cmd('kick', { id: p.id })));
+    r.append(tog, kick);
+    box.appendChild(r);
+  }
+}
+$('pSearch').addEventListener('input', () => A && renderPlayers());
+$('pFilter').addEventListener('change', () => A && renderPlayers());
+$('reviveLast').addEventListener('click', () => cmd('revive', { mode: 'last' }));
+$('reviveAll').addEventListener('click', () => cmd('revive', { mode: 'all' }));
+
+// ---------- 문제 편집 ----------
+function setDirty(v) { dirty = v; $('dirty').classList.toggle('hidden', !v); }
+function renderEditor() {
+  const box = $('qcards'); box.innerHTML = '';
+  $('qCount').textContent = `${draft.length}문제`;
+  draft.forEach((q, qi) => {
+    const live = A && qi === A.qIndex && A.phase !== 'lobby';
+    const c = document.createElement('div');
+    c.className = 'qcard' + (live ? ' current' : '');
+    c.innerHTML = `
+      <div class="head">
+        <b>Q${qi + 1}</b>
+        ${live ? '<span class="tag alive">진행 중</span>' : ''}
+        <span class="spacer"></span>
+        <label class="dim" style="font-size:13px">제한시간 <input type="number" min="3" max="300" class="field" style="width:5em;padding:5px 8px" id="t${qi}" value="${q.time}"> 초</label>
+        <button class="btn btn-ghost mini" type="button" data-a="up" ${qi === 0 ? 'disabled' : ''}>위로</button>
+        <button class="btn btn-ghost mini" type="button" data-a="down" ${qi === draft.length - 1 ? 'disabled' : ''}>아래로</button>
+        <button class="btn btn-ghost mini" type="button" data-a="del">삭제</button>
+      </div>
+      <textarea rows="2" id="q${qi}" placeholder="질문"></textarea>
+      <div class="opts" style="display:grid;gap:6px"></div>
+      <div class="row">
+        <button class="btn btn-ghost mini" type="button" data-a="addopt" ${q.options.length >= 5 ? 'disabled' : ''}>+ 보기</button>
+        <button class="btn btn-ghost mini" type="button" data-a="delopt" ${q.options.length <= 2 ? 'disabled' : ''}>- 마지막 보기</button>
+      </div>`;
+    c.querySelector('textarea').value = q.text;
+    c.querySelector('textarea').addEventListener('input', e => { q.text = e.target.value; setDirty(true); });
+    c.querySelector(`#t${qi}`).addEventListener('input', e => { q.time = +e.target.value; setDirty(true); });
+    const ob = c.querySelector('.opts');
+    q.options.forEach((o, oi) => {
+      const r = document.createElement('div'); r.className = 'ed-opt o' + oi;
+      r.innerHTML = `<input type="radio" name="ans${qi}" id="a${qi}_${oi}" ${q.answer === oi ? 'checked' : ''} aria-label="${oi + 1}번을 정답으로"><span class="opt-badge">${oi + 1}</span><input type="text" id="o${qi}_${oi}" placeholder="보기 ${oi + 1}">`;
+      r.querySelector('input[type=text]').value = o;
+      r.querySelector('input[type=text]').addEventListener('input', e => { q.options[oi] = e.target.value; setDirty(true); });
+      r.querySelector('input[type=radio]').addEventListener('change', () => { q.answer = oi; setDirty(true); });
+      ob.appendChild(r);
+    });
+    c.addEventListener('click', e => {
+      const a = e.target.dataset && e.target.dataset.a; if (!a) return;
+      if (a === 'del') { confirmClick(e.target, '삭제 확인', () => { draft.splice(qi, 1); setDirty(true); renderEditor(); }); return; }
+      if (a === 'up') [draft[qi - 1], draft[qi]] = [draft[qi], draft[qi - 1]];
+      if (a === 'down') [draft[qi + 1], draft[qi]] = [draft[qi], draft[qi + 1]];
+      if (a === 'addopt') q.options.push('');
+      if (a === 'delopt') { q.options.pop(); if (q.answer >= q.options.length) q.answer = 0; }
+      setDirty(true); renderEditor();
+    });
+    box.appendChild(c);
+  });
+}
+$('addQ').addEventListener('click', () => {
+  draft.push({ text: '', options: ['', '', '', ''], answer: 0, time: 20 });
+  setDirty(true); renderEditor();
+  $('q' + (draft.length - 1)).focus();
+});
+$('saveQ').addEventListener('click', async () => {
+  const r = await cmd('saveQuestions', { list: draft });
+  if (r.ok) setDirty(false);
+});
+$('revertQ').addEventListener('click', () => { draft = JSON.parse(JSON.stringify(A.questions)); setDirty(false); renderEditor(); });
+
+// 텍스트 일괄 입력
+$('bulkToggle').addEventListener('click', () => { $('bulkBox').classList.toggle('hidden'); if (!$('bulk').value) exportBulk(); });
+function exportBulk() {
+  $('bulk').value = draft.map(q => [q.text, ...q.options.map((o, i) => (i === q.answer ? '*' : '') + o), `시간: ${q.time}`].join('\n')).join('\n\n');
+}
+$('bulkExport').addEventListener('click', exportBulk);
+$('bulkApply').addEventListener('click', () => {
+  const blocks = $('bulk').value.replace(/\r/g, '').split(/\n\s*\n/).map(b => b.split('\n').map(s => s.trim()).filter(Boolean)).filter(b => b.length);
+  const out = [];
+  try {
+    blocks.forEach((lines, bi) => {
+      let time = 20;
+      const rest = [];
+      for (const l of lines) {
+        const m = l.match(/^(시간|time)\s*[:：]\s*(\d+)/i);
+        if (m) time = +m[2]; else rest.push(l);
+      }
+      const text = rest.shift();
+      const strip = l => l.replace(/^(\d[.)]\s+|[①②③④⑤]\s*|[-•]\s+)/, '');
+      const answer = rest.findIndex(l => l.startsWith('*'));
+      const options = rest.map(l => strip(l.replace(/^\*\s*/, '')));
+      if (options.length < 2 || options.length > 5) throw new Error(`${bi + 1}번째 문제: 보기는 2~5개여야 합니다.`);
+      if (answer < 0) throw new Error(`${bi + 1}번째 문제: 정답 보기 앞에 * 를 붙여 주세요.`);
+      out.push({ text, options, answer, time });
+    });
+    if (!out.length) throw new Error('입력된 문제가 없습니다.');
+  } catch (e) { $('bulkErr').textContent = e.message; return; }
+  $('bulkErr').textContent = '';
+  draft = out; setDirty(true); renderEditor();
+  toast(`${out.length}문제를 불러왔습니다. 저장을 눌러 반영하세요.`);
+});
+
+// ---------- 설정 ----------
+function renderSettings() {
+  $('joinOpen').checked = A.joinOpen;
+  $('autoUrl').textContent = A.defaultJoinUrl;
+  if (document.activeElement !== $('joinUrl')) $('joinUrl').value = A.joinUrl === A.defaultJoinUrl ? '' : A.joinUrl;
+  if (document.activeElement !== $('titleIn')) $('titleIn').value = A.title;
+}
+$('titleBtn').addEventListener('click', () => cmd('setTitle', { title: $('titleIn').value }));
+$('joinOpen').addEventListener('change', e => cmd('setJoinOpen', { open: e.target.checked }));
+$('joinUrlBtn').addEventListener('click', () => cmd('setJoinUrl', { url: $('joinUrl').value }));
+$('resetGame').addEventListener('click', e => confirmClick(e.currentTarget, '한 번 더 누르면 리셋', () => cmd('resetGame')));
+$('clearPlayers').addEventListener('click', e => confirmClick(e.currentTarget, '한 번 더 누르면 전원 퇴장', () => cmd('clearPlayers')));
+</script>
+</body>
+</html>

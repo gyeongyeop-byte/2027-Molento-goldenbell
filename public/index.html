@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#11133a">
+<title>골든벨</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="/common.css">
+<style>
+  body { display: flex; flex-direction: column; min-height: 100%; }
+  .wrap { width: 100%; max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; flex-direction: column; gap: 16px; flex: 1; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { font-family: var(--font-display); font-size: 20px; color: var(--gold); display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .me { font-size: 14px; display: flex; align-items: center; gap: 8px; min-width: 0; flex: none; }
+  .me b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 8em; }
+  .pill { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--stage-3); white-space: nowrap; }
+  .pill.alive { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+  .pill.out { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--bad); }
+
+  .center { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; text-align: center; }
+  .hero-bell { width: 92px; height: 92px; margin: 0 auto; filter: drop-shadow(0 8px 24px rgba(244,197,66,.35)); }
+  .title { font-size: clamp(34px, 10vw, 46px); line-height: 1.1; }
+  .title em { font-style: normal; color: var(--gold); }
+  form { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+  label { font-size: 14px; color: var(--ink-dim); }
+  input[type=text] { width: 100%; padding: 14px 16px; font-size: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--stage-2); }
+  .err { color: var(--bad); font-size: 14px; min-height: 1.4em; margin: 0; }
+  .big-btn { padding: 16px; font-size: 18px; border-radius: 12px; }
+
+  .stat-row { display: flex; justify-content: center; gap: 28px; }
+  .stat b { display: block; font-family: var(--font-display); font-size: 40px; line-height: 1; color: var(--gold); }
+  .stat span { font-size: 13px; color: var(--ink-dim); }
+
+  #vQuestion { display: flex; flex-direction: column; gap: 14px; }
+  .qhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .qno { font-family: var(--font-display); color: var(--gold); font-size: 18px; }
+  .timer { font-family: var(--font-display); font-size: 28px; font-variant-numeric: tabular-nums; }
+  .timer.hurry { color: var(--bad); }
+  .bar { height: 6px; border-radius: 6px; background: var(--stage-3); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; background: var(--gold); transform-origin: left; }
+  .qtext { font-size: clamp(20px, 5.6vw, 26px); font-weight: 900; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
+  .opts { display: grid; gap: 10px; }
+  .opt {
+    display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+    padding: 16px 14px; border-radius: var(--radius); border: 3px solid transparent;
+    background: color-mix(in srgb, var(--c) 82%, #000); color: #fff; font-size: 18px; font-weight: 700;
+    min-height: 64px; word-break: keep-all; overflow-wrap: anywhere;
+    transition: transform .08s, opacity .2s, border-color .2s;
+  }
+  .opt:active { transform: scale(.98); }
+  .opt.picked { border-color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 40%, transparent); }
+  .opts.has-pick .opt:not(.picked) { opacity: .45; }
+  .opt:disabled { cursor: default; }
+  .note { text-align: center; font-size: 15px; color: var(--ink-dim); min-height: 1.5em; margin: 0; }
+
+  .verdict { font-size: clamp(56px, 18vw, 84px); line-height: 1; }
+  .verdict.ok { color: var(--ok); }
+  .verdict.bad { color: var(--bad); }
+  .verdict.gold { color: var(--gold); }
+  .pop { animation: pop .5s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .ring { animation: ring 1.2s ease-in-out infinite; transform-origin: 50% 10%; }
+  @keyframes ring { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
+  .conn { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); transform: translateX(-50%); background: var(--bad); color: #fff; font-size: 13px; padding: 6px 14px; border-radius: 99px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="bell" viewBox="0 0 64 64">
+    <path d="M32 4a4 4 0 0 1 4 4v2.4c9.3 1.9 16 10 16 19.6v12l5 7.5a2 2 0 0 1-1.7 3.1H8.7A2 2 0 0 1 7 49.5L12 42V30c0-9.6 6.7-17.7 16-19.6V8a4 4 0 0 1 4-4Z" fill="#f4c542"/>
+    <path d="M20 30c0-6 4-11 10-12" stroke="#fff6c9" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/>
+    <circle cx="32" cy="57" r="5" fill="#c8951c"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><svg class="bell"><use href="#bell"/></svg><span class="evt">골든벨</span></div>
+    <div class="me hidden" id="me"><b id="meName"></b><span class="pill" id="mePill"></span></div>
+  </header>
+
+  <!-- 입장 -->
+  <section class="center" id="vJoin">
+    <svg class="hero-bell"><use href="#bell"/></svg>
+    <h1 class="title"><span class="evt">골든벨</span><br><em>도전!</em></h1>
+    <p class="dim" style="margin:0">닉네임을 정하고 입장하세요. 문제를 맞히면 통과, 틀리면 탈락. 끝까지 살아남은 사람이 골든벨을 울립니다.</p>
+    <form id="joinForm" autocomplete="off">
+      <label for="nick">닉네임 (최대 16자)</label>
+      <input type="text" id="nick" maxlength="16" placeholder="예: 3조 홍길동" enterkeyhint="go" required>
+      <p class="err" id="joinErr" role="alert"></p>
+      <button class="btn btn-gold big-btn" type="submit" id="joinBtn">입장하기</button>
+    </form>
+  </section>
+
+  <!-- 대기 -->
+  <section class="center hidden" id="vLobby">
+    <svg class="hero-bell"><use href="#bell"/></svg>
+    <h2 class="title" id="lobbyTitle">곧 시작합니다</h2>
+    <p class="dim" style="margin:0" id="lobbySub">화면을 켜 둔 채로 기다려 주세요.</p>
+    <div class="stat-row">
+      <div class="stat"><b class="tabular" id="lTotal">0</b><span>참가자</span></div>
+      <div class="stat"><b class="tabular" id="lAlive">0</b><span>생존</span></div>
+    </div>
+    <p class="dim" style="margin:0;font-size:14px" id="lobbyMsg"></p>
+  </section>
+
+  <!-- 문제 -->
+  <section class="hidden" id="vQuestion">
+    <div class="qhead">
+      <span class="qno" id="qNo"></span>
+      <span class="timer" id="timer" aria-live="off"></span>
+    </div>
+    <div class="bar"><i id="timerBar"></i></div>
+    <div class="qtext" id="qText"></div>
+    <div class="opts" id="opts"></div>
+    <p class="note" id="qNote" aria-live="polite"></p>
+  </section>
+
+  <!-- 결과 -->
+  <section class="center hidden" id="vResult">
+    <div class="verdict display pop" id="verdict"></div>
+    <p style="margin:0;font-size:18px;font-weight:700" id="resultSub"></p>
+    <div class="stat-row">
+      <div class="stat"><b class="tabular" id="rAlive">0</b><span>생존</span></div>
+      <div class="stat"><b class="tabular" id="rOut">0</b><span>이번 탈락</span></div>
+    </div>
+    <p class="dim" style="margin:0" id="resultMsg"></p>
+  </section>
+
+  <!-- 종료 -->
+  <section class="center hidden" id="vEnd">
+    <svg class="hero-bell ring"><use href="#bell"/></svg>
+    <div class="verdict display gold pop" id="endTitle">골든벨!</div>
+    <p style="margin:0;font-size:18px;font-weight:700" id="endSub"></p>
+    <p class="dim" style="margin:0" id="endWinners"></p>
+  </section>
+</div>
+<div class="conn hidden" id="conn">연결이 끊겼습니다. 다시 연결하는 중…</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} }
+};
+const NUMS = ['①','②','③','④','⑤'];
+const socket = io({ transports: ['websocket', 'polling'] });
+let S = null, joined = false, endAt = 0, lastRenderKey = '';
+
+function show(view) {
+  for (const v of ['vJoin','vLobby','vQuestion','vResult','vEnd']) $(v).classList.toggle('hidden', v !== view);
+}
+function setTitle(t) {
+  if (!t) return;
+  document.title = t;
+  document.querySelectorAll('.evt').forEach(e => { e.textContent = t; });
+}
+
+function tryRejoin() {
+  const id = store.get('gb_pid');
+  if (!id) return show('vJoin');
+  socket.emit('player:join', { playerId: id, name: store.get('gb_name') || '' }, res => {
+    if (res.ok) { onJoined(res); if (S) render(S); }
+    else { store.del('gb_pid'); show('vJoin'); $('joinErr').textContent = res.error || ''; }
+  });
+}
+function onJoined(res) {
+  joined = true;
+  store.set('gb_pid', res.playerId);
+  store.set('gb_name', res.name);
+  $('meName').textContent = res.name;
+  $('me').classList.remove('hidden');
+}
+
+$('nick').value = store.get('gb_name') || '';
+$('joinForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('nick').value.trim();
+  if (!name) { $('joinErr').textContent = '닉네임을 입력해 주세요.'; return; }
+  $('joinBtn').disabled = true;
+  socket.emit('player:join', { name }, res => {
+    $('joinBtn').disabled = false;
+    if (!res.ok) { $('joinErr').textContent = res.error; return; }
+    $('joinErr').textContent = '';
+    onJoined(res);
+    if (S) render(S);
+  });
+});
+
+socket.on('connect', () => {
+  $('conn').classList.add('hidden');
+  socket.emit('screen:peek');
+  if (store.get('gb_pid')) tryRejoin(); else if (!joined) show('vJoin');
+});
+socket.on('disconnect', () => $('conn').classList.remove('hidden'));
+socket.on('kicked', msg => {
+  joined = false; store.del('gb_pid');
+  $('me').classList.add('hidden');
+  show('vJoin');
+  $('joinErr').textContent = msg;
+});
+socket.on('state', st => {
+  S = st;
+  setTitle(st.title);
+  endAt = Date.now() + (st.timeLeft || 0);
+  if (joined && st.me) render(st);
+});
+
+function render(st) {
+  const me = st.me;
+  if (!me) return;
+  $('meName').textContent = me.name;
+  $('mePill').textContent = me.alive ? '생존' : '탈락';
+  $('mePill').className = 'pill ' + (me.alive ? 'alive' : 'out');
+
+  if (st.phase === 'lobby' || !st.question) {
+    show('vLobby');
+    $('lTotal').textContent = st.total;
+    $('lAlive').textContent = st.aliveCount;
+    $('lobbyTitle').textContent = st.qIndex < 0 ? '곧 시작합니다' : '잠시 대기';
+    $('lobbySub').textContent = me.alive ? '화면을 켜 둔 채로 기다려 주세요.' : '지금은 관전 중입니다. 패자부활을 노려 보세요.';
+    $('lobbyMsg').textContent = st.message || '';
+    return;
+  }
+  if (st.phase === 'ended') {
+    show('vEnd');
+    const winners = st.survivors || [];
+    const iWon = me.alive;
+    $('endTitle').textContent = iWon ? '골든벨!' : '게임 종료';
+    $('endSub').textContent = iWon ? `${me.name}님, 끝까지 살아남았습니다!` : `${me.correctCount}문제를 맞혔습니다. 수고하셨어요!`;
+    $('endWinners').textContent = winners.length ? `최종 생존: ${winners.join(', ')}` : '';
+    return;
+  }
+  if (st.phase === 'revealed') { renderResult(st); return; }
+  renderQuestion(st);
+}
+
+function renderQuestion(st) {
+  show('vQuestion');
+  const q = st.question, me = st.me;
+  $('qNo').textContent = `Q${st.qIndex + 1} / ${st.qTotal}`;
+  $('qText').textContent = q.text;
+  const key = st.qIndex + '|' + q.options.join('|');
+  const box = $('opts');
+  if (key !== lastRenderKey) {
+    lastRenderKey = key;
+    box.innerHTML = '';
+    q.options.forEach((t, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'opt o' + i;
+      b.id = 'opt' + i;
+      b.innerHTML = `<span class="opt-badge">${i + 1}</span><span class="t"></span>`;
+      b.querySelector('.t').textContent = t;
+      b.addEventListener('click', () => answer(i));
+      box.appendChild(b);
+    });
+  }
+  const can = me.canAnswer;
+  box.classList.toggle('has-pick', me.answer != null);
+  [...box.children].forEach((b, i) => {
+    b.disabled = !can;
+    b.classList.toggle('picked', me.answer === i);
+  });
+  let note = '';
+  if (!me.alive) note = '탈락 — 관전 중입니다.';
+  else if (st.phase === 'locked') note = me.answer != null ? `${NUMS[me.answer]} 제출 완료 · 마감! 정답 공개를 기다리세요.` : '마감! 답을 내지 못했습니다.';
+  else if (!can) note = '이번 문제는 다음 문제부터 참여할 수 있습니다.';
+  else if (me.answer != null) note = `${NUMS[me.answer]} 선택됨 · 마감 전까지 바꿀 수 있어요.`;
+  else note = '정답을 고르세요!';
+  $('qNote').textContent = note;
+  tick();
+}
+
+function renderResult(st) {
+  show('vResult');
+  const me = st.me, q = st.question;
+  const outNow = st.eliminatedNow.includes(me.name);
+  const v = $('verdict');
+  if (outNow) { v.textContent = '탈락'; v.className = 'verdict display bad'; }
+  else if (me.alive) { v.textContent = '통과!'; v.className = 'verdict display ok'; }
+  else { v.textContent = '관전 중'; v.className = 'verdict display'; }
+  void v.offsetWidth; v.classList.add('pop');
+  $('resultSub').textContent = `정답: ${NUMS[q.answer]} ${q.options[q.answer]}`;
+  $('rAlive').textContent = st.aliveCount;
+  $('rOut').textContent = st.eliminatedNow.length;
+  $('resultMsg').textContent = st.message || (me.alive ? '다음 문제를 기다리세요.' : '');
+}
+
+function answer(i) {
+  if (!S || !S.me || !S.me.canAnswer) return;
+  S.me.answer = i; // 바로 화면에 반영
+  renderQuestion(S);
+  if (navigator.vibrate) try { navigator.vibrate(20); } catch {}
+  socket.emit('player:answer', { choice: i }, res => {
+    if (!res.ok) $('qNote').textContent = res.error;
+  });
+}
+
+function tick() {
+  if (!S || !S.question) return;
+  const total = (S.question.time || 1) * 1000;
+  const left = S.phase === 'open' ? Math.max(0, endAt - Date.now()) : 0;
+  const sec = Math.ceil(left / 1000);
+  $('timer').textContent = S.phase === 'open' ? sec : '마감';
+  $('timer').classList.toggle('hurry', S.phase === 'open' && sec <= 5);
+  $('timerBar').style.transform = `scaleX(${S.phase === 'open' ? Math.min(1, left / total) : 0})`;
+}
+setInterval(tick, 200);
+
+// 화면 꺼짐 방지 (지원 기기만)
+async function keepAwake() { try { await navigator.wakeLock?.request('screen'); } catch {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+keepAwake();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "goldenbell-live",
+  "version": "1.0.0",
+  "description": "실시간 골든벨 퀴즈 (QR 접속 · 객관식 · 관리자 통제)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}
