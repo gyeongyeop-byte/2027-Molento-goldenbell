@@ -1,22 +1,27 @@
-/* Layout: 무대 조명 아래의 남색 무대 + 금빛 종. 보기 색은 번호와 함께 써서 색만으로 구분하지 않음 */
+/* 색·글꼴은 관리자 > 디자인 탭에서 바꾸며, shared.js의 applyTheme()가 아래 변수를 덮어씁니다.
+   여기 값은 서버 연결 전 잠깐 보이는 기본값(무대 남색)입니다. */
 :root {
-  --stage: #11133a;
-  --stage-2: #1a1d4f;
-  --stage-3: #262a68;
-  --line: rgba(255, 255, 255, .12);
+  --bg: #11133a;
+  --surface: #1a1d4f;
   --ink: #f5f3ec;
   --ink-dim: #a9abd0;
-  --gold: #f4c542;
-  --gold-deep: #c8951c;
+  --accent: #f4c542;
+  --on-accent: #16161d;
   --ok: #3ccf8e;
+  --on-ok: #16161d;
   --bad: #ff5c6c;
-  --opt-0: #ff6b57;
-  --opt-1: #3aa0ff;
-  --opt-2: #2fc48d;
-  --opt-3: #a678ff;
-  --opt-4: #f29d38;
+  --on-bad: #16161d;
+  --opt-0: #ff6b57; --on-opt-0: #ffffff;
+  --opt-1: #3aa0ff; --on-opt-1: #ffffff;
+  --opt-2: #2fc48d; --on-opt-2: #16161d;
+  --opt-3: #a678ff; --on-opt-3: #ffffff;
+  --opt-4: #f29d38; --on-opt-4: #16161d;
   --font-display: "Black Han Sans", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --font-body: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  /* 위 색에서 자동으로 만들어지는 값 */
+  --surface-2: color-mix(in srgb, var(--surface) 86%, var(--ink) 14%);
+  --line: color-mix(in srgb, var(--ink) 14%, transparent);
+  --shade: color-mix(in srgb, var(--bg) 70%, #000 30%);
   --radius: 14px;
   color-scheme: dark;
 }
@@ -24,7 +29,7 @@
 html, body { height: 100%; }
 body {
   margin: 0;
-  background: radial-gradient(120% 80% at 50% -10%, var(--stage-3) 0%, var(--stage) 55%) fixed, var(--stage);
+  background: radial-gradient(120% 80% at 50% -10%, var(--surface-2) 0%, var(--bg) 55%) fixed, var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 16px;
@@ -36,32 +41,55 @@ body {
 h1, h2, h3, .display { font-family: var(--font-display); font-weight: 400; letter-spacing: .01em; text-wrap: balance; margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .tabular { font-variant-numeric: tabular-nums; }
 .dim { color: var(--ink-dim); }
 .hidden { display: none !important; }
 
 .btn {
   border: 0; border-radius: 10px; padding: .7em 1.1em; font-weight: 700;
-  background: var(--stage-3); color: var(--ink);
+  background: var(--surface-2); color: var(--ink);
   transition: transform .08s ease, filter .15s ease;
 }
 .btn:active { transform: scale(.97); }
-.btn:hover { filter: brightness(1.12); }
+.btn:hover { filter: brightness(1.08); }
 .btn:disabled { opacity: .4; cursor: not-allowed; filter: none; transform: none; }
-.btn-gold { background: var(--gold); color: #241a00; }
-.btn-bad { background: var(--bad); color: #fff; }
-.btn-ok { background: var(--ok); color: #062a1a; }
+.btn-gold { background: var(--accent); color: var(--on-accent); }
+.btn-bad { background: var(--bad); color: var(--on-bad); }
+.btn-ok { background: var(--ok); color: var(--on-ok); }
 .btn-ghost { background: transparent; border: 1px solid var(--line); }
 
 .opt-badge {
   display: inline-grid; place-items: center; flex: none;
   width: 1.9em; height: 1.9em; border-radius: 50%;
-  font-family: var(--font-display); background: rgba(0,0,0,.25); color: #fff;
+  font-family: var(--font-display); background: rgba(0,0,0,.2);
 }
-.o0 { --c: var(--opt-0); } .o1 { --c: var(--opt-1); } .o2 { --c: var(--opt-2); } .o3 { --c: var(--opt-3); } .o4 { --c: var(--opt-4); }
+.o0 { --c: var(--opt-0); --on: var(--on-opt-0); }
+.o1 { --c: var(--opt-1); --on: var(--on-opt-1); }
+.o2 { --c: var(--opt-2); --on: var(--on-opt-2); }
+.o3 { --c: var(--opt-3); --on: var(--on-opt-3); }
+.o4 { --c: var(--opt-4); --on: var(--on-opt-4); }
 
 .bell { width: 1em; height: 1em; display: inline-block; vertical-align: -.12em; }
+.bell-body { fill: var(--accent); }
+.bell-clap { fill: color-mix(in srgb, var(--accent) 70%, #000); }
+.ava { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; line-height: 1; }
+
+/* 순위표 */
+.board { display: grid; gap: 8px; }
+.brow {
+  display: grid; grid-template-columns: 2.6em 2em minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line);
+  animation: rowIn .45s cubic-bezier(.2,.8,.2,1) both;
+}
+.brow .rk { font-family: var(--font-display); font-size: 1.3em; color: var(--ink-dim); text-align: center; font-variant-numeric: tabular-nums; }
+.brow .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.brow .sc { font-family: var(--font-display); font-size: 1.3em; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.brow .sc small { font-family: var(--font-body); font-size: .6em; color: var(--ink-dim); margin-left: .4em; }
+.brow.r1 { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.brow.r1 .rk, .brow.r2 .rk, .brow.r3 .rk { color: var(--accent); }
+.brow.mine { outline: 2px solid var(--ink); }
+@keyframes rowIn { from { opacity: 0; transform: translateY(12px); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

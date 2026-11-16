@@ -5,66 +5,103 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>골든벨 무대 화면</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/common.css">
+<script src="/shared.js"></script>
 <style>
   /* 프로젝터용: 화면 크기에 맞춰 vmin 단위로 키움 */
   body { overflow: hidden; }
   .stage { height: 100%; display: flex; flex-direction: column; padding: 2.4vmin 3vmin; gap: 2vmin; }
   .top { display: flex; align-items: center; justify-content: space-between; gap: 2vmin; }
-  .brand { font-family: var(--font-display); color: var(--gold); font-size: 3.6vmin; display: flex; gap: 1vmin; align-items: center; min-width: 0; }
-  .chips { display: flex; gap: 1.4vmin; }
-  .chip { background: var(--stage-2); border: 1px solid var(--line); border-radius: 99px; padding: .6vmin 2vmin; font-size: 2.4vmin; white-space: nowrap; }
-  .chip b { font-family: var(--font-display); font-weight: 400; color: var(--gold); font-size: 3vmin; margin-left: .6vmin; }
+  .brand { font-family: var(--font-display); color: var(--accent); font-size: 3.6vmin; display: flex; gap: 1vmin; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .chips { display: flex; gap: 1.4vmin; flex: none; }
+  .chip { background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: .6vmin 2vmin; font-size: 2.4vmin; white-space: nowrap; }
+  .chip b { font-family: var(--font-display); font-weight: 400; color: var(--accent); font-size: 3vmin; margin-left: .6vmin; }
 
   .view { flex: 1; min-height: 0; display: flex; }
 
   /* 대기실 */
   #vLobby { gap: 5vmin; align-items: center; }
-  .qrbox { background: #fff; border-radius: 3vmin; padding: 2.4vmin; display: flex; flex-direction: column; align-items: center; gap: 1.2vmin; flex: none; box-shadow: 0 2vmin 6vmin rgba(0,0,0,.4); }
+  .qrbox { background: #fff; border-radius: 3vmin; padding: 2.4vmin; display: flex; flex-direction: column; align-items: center; gap: 1.2vmin; flex: none; box-shadow: 0 2vmin 6vmin rgba(0,0,0,.3); }
   .qrbox img { width: 52vmin; height: 52vmin; display: block; }
-  .qrbox .url { color: #10122b; font-weight: 700; font-size: 2.4vmin; word-break: break-all; text-align: center; max-width: 52vmin; }
+  .qrbox .url { color: #111; font-weight: 700; font-size: 2.4vmin; word-break: break-all; text-align: center; max-width: 52vmin; }
   .lobby-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3vmin; }
-  .lobby-side h1 { font-size: 11vmin; line-height: 1.05; }
-  .lobby-side h1 em { font-style: normal; color: var(--gold); }
+  .lobby-side h1 { font-size: 10vmin; line-height: 1.08; }
+  .lobby-side h1 em { font-style: normal; color: var(--accent); }
   .lobby-side .how { font-size: 3vmin; color: var(--ink-dim); margin: 0; }
   .count-big { font-family: var(--font-display); font-size: 5vmin; }
-  .count-big b { color: var(--gold); font-weight: 400; font-size: 9vmin; font-variant-numeric: tabular-nums; }
-  .names { display: flex; flex-wrap: wrap; gap: 1vmin; max-height: 28vmin; overflow: hidden; align-content: flex-start; }
-  .names span { background: var(--stage-2); border: 1px solid var(--line); padding: .5vmin 1.6vmin; border-radius: 99px; font-size: 2.4vmin; animation: in .4s ease; }
+  .count-big b { color: var(--accent); font-weight: 400; font-size: 9vmin; font-variant-numeric: tabular-nums; }
+  .names { display: flex; flex-wrap: wrap; gap: 1vmin; max-height: 30vmin; overflow: hidden; align-content: flex-start; }
+  .names span { background: var(--surface); border: 1px solid var(--line); padding: .5vmin 1.6vmin; border-radius: 99px; font-size: 2.5vmin; animation: in .4s ease; white-space: nowrap; }
   @keyframes in { from { transform: translateY(1vmin); opacity: 0; } }
+
+  /* 부문 소개 */
+  #vIntro { flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; text-align: center; }
+  #vIntro .no { font-family: var(--font-display); font-size: 6vmin; color: var(--ink-dim); }
+  #vIntro h1 { font-size: 16vmin; color: var(--accent); line-height: 1.05; animation: pop .7s cubic-bezier(.2,1.5,.4,1); }
+  #vIntro .sub { font-size: 3.4vmin; color: var(--ink-dim); }
+  .sec-track { display: flex; gap: 1.4vmin; flex-wrap: wrap; justify-content: center; margin-top: 2vmin; }
+  .sec-track span { padding: .8vmin 2.4vmin; border-radius: 99px; border: 1px solid var(--line); font-size: 2.4vmin; color: var(--ink-dim); }
+  .sec-track span.done { color: var(--ink); }
+  .sec-track span.now { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
   /* 문제 */
   #vQuestion { flex-direction: column; gap: 2.4vmin; }
   .qrow { display: flex; gap: 3vmin; align-items: center; }
-  .qno { font-family: var(--font-display); color: var(--gold); font-size: 5vmin; flex: none; }
-  .qtext { flex: 1; min-width: 0; font-size: 5.4vmin; font-weight: 900; line-height: 1.3; word-break: keep-all; overflow-wrap: anywhere; }
+  .qmeta { flex: none; display: flex; flex-direction: column; gap: .6vmin; align-items: flex-start; }
+  .qno { font-family: var(--font-display); color: var(--accent); font-size: 5vmin; line-height: 1; }
+  .qsec { font-size: 2.2vmin; color: var(--ink-dim); font-weight: 700; white-space: nowrap; }
+  .qpts { font-size: 2.2vmin; font-weight: 900; background: var(--accent); color: var(--on-accent); padding: .3vmin 1.4vmin; border-radius: 99px; }
+  .qtext { flex: 1; min-width: 0; font-size: 5.2vmin; font-weight: 900; line-height: 1.3; }
   .clock { position: relative; width: 17vmin; height: 17vmin; flex: none; }
   .clock svg { width: 100%; height: 100%; transform: rotate(-90deg); }
   .clock .num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 7vmin; font-variant-numeric: tabular-nums; }
   .clock.hurry .num { color: var(--bad); }
   .opts { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2vmin; }
   .opts.n3 .opt:last-child, .opts.n5 .opt:last-child { grid-column: 1 / -1; }
-  .opt { position: relative; overflow: hidden; display: flex; align-items: center; gap: 2vmin; padding: 2vmin 3vmin; border-radius: 2.4vmin; background: color-mix(in srgb, var(--c) 80%, #000); font-size: 4.6vmin; font-weight: 700; border: .6vmin solid transparent; transition: opacity .3s, transform .3s; word-break: keep-all; overflow-wrap: anywhere; }
+  .opt { position: relative; overflow: hidden; display: flex; align-items: center; gap: 2vmin; padding: 2vmin 3vmin; border-radius: 2.4vmin; background: var(--c); color: var(--on); font-size: 4.6vmin; font-weight: 700; border: .6vmin solid transparent; transition: opacity .3s, transform .3s; }
   .opt .opt-badge { font-size: 4vmin; position: relative; }
-  .opt .fill { position: absolute; inset: 0 auto 0 0; background: rgba(255,255,255,.16); width: 0; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+  .opt .fill { position: absolute; inset: 0 auto 0 0; background: rgba(255,255,255,.2); width: 0; transition: width 1s cubic-bezier(.2,.8,.2,1); }
   .opt .t { position: relative; flex: 1; min-width: 0; }
   .opt .cnt { position: relative; font-family: var(--font-display); font-weight: 400; font-size: 5vmin; }
-  .revealed .opt:not(.correct) { opacity: .35; }
-  .revealed .opt.correct { border-color: var(--gold); transform: scale(1.02); box-shadow: 0 0 6vmin rgba(244,197,66,.45); }
+  .revealed .opt:not(.correct) { opacity: .3; }
+  .revealed .opt.correct { border-color: var(--ink); transform: scale(1.02); box-shadow: 0 0 6vmin color-mix(in srgb, var(--c) 60%, transparent); }
   .status { font-size: 3vmin; text-align: center; min-height: 4vmin; }
-  .status b { color: var(--gold); font-family: var(--font-display); font-weight: 400; }
-  .outlist { font-size: 2.4vmin; color: var(--ink-dim); text-align: center; max-height: 7vmin; overflow: hidden; }
+  .status b { color: var(--accent); font-family: var(--font-display); font-weight: 400; }
 
-  /* 종료 */
-  #vEnd { flex-direction: column; align-items: center; justify-content: center; gap: 3vmin; text-align: center; }
-  #vEnd svg { width: 22vmin; height: 22vmin; animation: ring 1.2s ease-in-out infinite; transform-origin: 50% 10%; filter: drop-shadow(0 0 5vmin rgba(244,197,66,.5)); }
+  /* 순위 */
+  #vBoard { flex-direction: column; gap: 2vmin; align-items: center; }
+  #vBoard h1 { font-size: 7vmin; text-align: center; }
+  #vBoard h1 small { display: block; font-family: var(--font-body); font-size: .38em; color: var(--ink-dim); font-weight: 700; margin-bottom: .6vmin; }
+  .board { width: min(1100px, 92vw); font-size: 2.9vmin; gap: 1vmin; }
+  .board.two { grid-template-columns: 1fr 1fr; grid-auto-flow: column; column-gap: 2vmin; }
+  .board.one { width: min(820px, 80vw); }
+  .brow { padding: 1.1vmin 2vmin; border-radius: 1.6vmin; }
+  .brow .ava { font-size: 1.2em; }
+
+  /* 최종 */
+  #vEnd { flex-direction: column; align-items: center; justify-content: center; gap: 2.4vmin; }
+  #vEnd h1 { font-size: 8vmin; color: var(--accent); display: flex; align-items: center; gap: 2vmin; }
+  #vEnd h1 svg { width: 1em; height: 1em; animation: ring 1.2s ease-in-out infinite; transform-origin: 50% 10%; }
   @keyframes ring { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
-  #vEnd h1 { font-size: 14vmin; color: var(--gold); }
-  .winners { display: flex; flex-wrap: wrap; justify-content: center; gap: 2vmin; max-width: 90vw; }
-  .winners span { font-family: var(--font-display); font-size: 6vmin; background: var(--stage-2); border: .4vmin solid var(--gold); padding: 1vmin 4vmin; border-radius: 99px; }
+  .podium { display: flex; align-items: flex-end; justify-content: center; gap: 2.4vmin; }
+  .pod { display: flex; flex-direction: column; align-items: center; gap: 1vmin; width: 24vmin; animation: rise .8s cubic-bezier(.2,.9,.2,1) both; }
+  .pod .ava { font-size: 9vmin; }
+  .pod .nm { font-weight: 900; font-size: 3vmin; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pod .block { width: 100%; border-radius: 1.6vmin 1.6vmin 0 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 1.4vmin; background: var(--surface); border: 1px solid var(--line); border-bottom: 0; }
+  .pod .block b { font-family: var(--font-display); font-weight: 400; font-size: 7vmin; line-height: 1; color: var(--ink-dim); }
+  .pod .block span { font-family: var(--font-display); font-size: 3.2vmin; color: var(--accent); }
+  .pod.p1 .block { height: 26vmin; background: color-mix(in srgb, var(--accent) 22%, var(--surface)); border-color: var(--accent); }
+  .pod.p1 .block b { color: var(--accent); }
+  .pod.p2 .block { height: 19vmin; }
+  .pod.p3 .block { height: 14vmin; }
+  .pod.p1 { animation-delay: 1.4s; } .pod.p2 { animation-delay: .8s; } .pod.p3 { animation-delay: .3s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8vmin); } }
+  .rest { display: flex; flex-wrap: wrap; gap: 1vmin 2vmin; justify-content: center; font-size: 2.5vmin; color: var(--ink-dim); max-width: 92vw; }
+  .rest span b { color: var(--ink); }
 
-  .msg { position: fixed; left: 50%; bottom: 3vmin; transform: translateX(-50%); background: var(--gold); color: #241a00; font-weight: 900; font-size: 3vmin; padding: 1vmin 3vmin; border-radius: 99px; }
+  .msg { position: fixed; left: 50%; bottom: 3vmin; transform: translateX(-50%); background: var(--accent); color: var(--on-accent); font-weight: 900; font-size: 3vmin; padding: 1vmin 3vmin; border-radius: 99px; max-width: 80vw; text-align: center; }
   .sound { position: fixed; right: 2vmin; bottom: 2vmin; font-size: 13px; opacity: .6; }
   .sound:hover { opacity: 1; }
 </style>
@@ -72,17 +109,17 @@
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="bell" viewBox="0 0 64 64">
-    <path d="M32 4a4 4 0 0 1 4 4v2.4c9.3 1.9 16 10 16 19.6v12l5 7.5a2 2 0 0 1-1.7 3.1H8.7A2 2 0 0 1 7 49.5L12 42V30c0-9.6 6.7-17.7 16-19.6V8a4 4 0 0 1 4-4Z" fill="#f4c542"/>
-    <path d="M20 30c0-6 4-11 10-12" stroke="#fff6c9" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/>
-    <circle cx="32" cy="57" r="5" fill="#c8951c"/>
+    <path style="fill:var(--accent)" d="M32 4a4 4 0 0 1 4 4v2.4c9.3 1.9 16 10 16 19.6v12l5 7.5a2 2 0 0 1-1.7 3.1H8.7A2 2 0 0 1 7 49.5L12 42V30c0-9.6 6.7-17.7 16-19.6V8a4 4 0 0 1 4-4Z"/>
+    <path d="M20 30c0-6 4-11 10-12" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".45"/>
+    <circle style="fill:color-mix(in srgb, var(--accent) 65%, #000)" cx="32" cy="57" r="5"/>
   </symbol>
 </svg>
 <div class="stage">
   <div class="top">
     <div class="brand"><svg class="bell"><use href="#bell"/></svg><span id="evt">골든벨</span></div>
     <div class="chips">
+      <span class="chip" id="chipSec" hidden></span>
       <span class="chip">참가<b class="tabular" id="cTotal">0</b></span>
-      <span class="chip">생존<b class="tabular" id="cAlive">0</b></span>
     </div>
   </div>
 
@@ -93,30 +130,45 @@
     </div>
     <div class="lobby-side">
       <h1>QR 찍고<br><em>골든벨</em> 도전!</h1>
-      <p class="how">휴대폰 카메라로 QR을 찍어 접속 → 닉네임 입력 → 대기</p>
+      <p class="how">휴대폰 카메라로 QR 찍기 → 아바타·닉네임 정하기 → 대기</p>
       <div class="count-big"><b id="lCount">0</b> 명 입장</div>
       <div class="names" id="names"></div>
     </div>
   </section>
 
+  <section class="view hidden" id="vIntro">
+    <div class="no" id="introNo"></div>
+    <h1 id="introName"></h1>
+    <div class="sub" id="introSub"></div>
+    <div class="sec-track" id="secTrack"></div>
+  </section>
+
   <section class="view hidden" id="vQuestion">
     <div class="qrow">
-      <div class="qno" id="qNo"></div>
+      <div class="qmeta">
+        <div class="qno" id="qNo"></div>
+        <div class="qsec" id="qSec"></div>
+        <div class="qpts" id="qPts"></div>
+      </div>
       <div class="qtext" id="qText"></div>
       <div class="clock" id="clock">
-        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" stroke="var(--stage-3)" stroke-width="9"/><circle id="arc" cx="50" cy="50" r="44" fill="none" stroke="var(--gold)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="0"/></svg>
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="44" fill="none" style="stroke:var(--surface-2)" stroke-width="9"/><circle id="arc" cx="50" cy="50" r="44" fill="none" style="stroke:var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="0"/></svg>
         <div class="num" id="clockNum"></div>
       </div>
     </div>
     <div class="opts" id="opts"></div>
     <div class="status" id="status"></div>
-    <div class="outlist" id="outlist"></div>
+  </section>
+
+  <section class="view hidden" id="vBoard">
+    <h1 id="boardTitle"></h1>
+    <div class="board" id="boardList"></div>
   </section>
 
   <section class="view hidden" id="vEnd">
-    <svg><use href="#bell"/></svg>
-    <h1 id="endTitle">골든벨!</h1>
-    <div class="winners" id="winners"></div>
+    <h1><svg><use href="#bell"/></svg>최종 순위</h1>
+    <div class="podium" id="podium"></div>
+    <div class="rest" id="rest"></div>
   </section>
 </div>
 <div class="msg hidden" id="msg"></div>
@@ -126,58 +178,76 @@
 <script>
 const $ = id => document.getElementById(id);
 const socket = io({ transports: ['websocket', 'polling'] });
-let S = null, endAt = 0, optKey = '', lastPhase = '', lastSec = -1, lastUrl = '';
+let S = null, endAt = 0, optKey = '', lastPhase = '', lastSec = -1, lastUrl = '', lastThemeKey = '', boardKey = '', endKey = '';
 
 socket.on('connect', () => socket.emit('screen:hello'));
 socket.on('state', st => {
-  const prevPhase = lastPhase;
+  const prev = lastPhase;
   S = st; endAt = Date.now() + (st.timeLeft || 0);
   render(st);
-  if (st.phase !== prevPhase && prevPhase) {
+  if (st.phase !== prev && prev) {
     if (st.phase === 'revealed') sfx.reveal();
-    if (st.phase === 'ended') sfx.bell();
     if (st.phase === 'open') sfx.start();
+    if (st.phase === 'intro') sfx.start();
+    if (st.phase === 'board') sfx.reveal();
+    if (st.phase === 'ended') sfx.bell();
   }
   lastPhase = st.phase;
 });
 
-function show(v) { for (const id of ['vLobby','vQuestion','vEnd']) $(id).classList.toggle('hidden', id !== v); }
+function show(v) { for (const id of ['vLobby','vIntro','vQuestion','vBoard','vEnd']) $(id).classList.toggle('hidden', id !== v); }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
 function render(st) {
+  const k = JSON.stringify(st.theme);
+  if (k !== lastThemeKey) { lastThemeKey = k; GB.applyTheme(st.theme); }
   $('evt').textContent = st.title;
   document.title = st.title + ' 무대 화면';
   $('cTotal').textContent = st.total;
-  $('cAlive').textContent = st.aliveCount;
+  $('chipSec').hidden = !st.section || st.phase === 'lobby' || st.phase === 'ended';
+  if (st.section) $('chipSec').textContent = `${st.sIdx + 1}부 ${st.section.name}`;
   $('msg').textContent = st.message || '';
   $('msg').classList.toggle('hidden', !st.message);
 
-  if (st.phase === 'lobby' || !st.question) {
-    show('vLobby');
-    if (st.joinUrl !== lastUrl) { lastUrl = st.joinUrl; $('qr').src = '/qr.svg?u=' + encodeURIComponent(st.joinUrl); }
-    $('url').textContent = st.joinUrl.replace(/\/$/, '');
-    $('lCount').textContent = st.total;
-    const names = st.survivors || [];
-    const box = $('names');
-    const have = new Set([...box.children].map(n => n.textContent));
-    const want = new Set(names);
-    [...box.children].forEach(n => { if (!want.has(n.textContent)) n.remove(); });
-    names.forEach(n => { if (!have.has(n)) { const s = document.createElement('span'); s.textContent = n; box.appendChild(s); } });
-    return;
-  }
-  if (st.phase === 'ended') {
-    show('vEnd');
-    const w = st.survivors || [];
-    $('endTitle').textContent = w.length ? '골든벨!' : '게임 종료';
-    $('winners').innerHTML = '';
-    w.forEach(n => { const s = document.createElement('span'); s.textContent = n; $('winners').appendChild(s); });
-    return;
-  }
+  if (st.phase === 'intro' && st.section) return renderIntro(st);
+  if (st.phase === 'board' && st.board) return renderBoard(st);
+  if (st.phase === 'ended' && st.board) return renderEnd(st);
+  if (st.question) return renderQuestion(st);
+  renderLobby(st);
+}
+
+function renderLobby(st) {
+  show('vLobby');
+  if (st.joinUrl !== lastUrl) { lastUrl = st.joinUrl; $('qr').src = '/qr.svg?u=' + encodeURIComponent(st.joinUrl); }
+  $('url').textContent = st.joinUrl.replace(/\/$/, '');
+  $('lCount').textContent = st.total;
+  const list = st.lobbyNames || [];
+  const box = $('names');
+  const label = p => `${p.avatar} ${p.name}`;
+  const want = new Set(list.map(label));
+  const have = new Set([...box.children].map(n => n.textContent));
+  [...box.children].forEach(n => { if (!want.has(n.textContent)) n.remove(); });
+  list.forEach(p => { if (!have.has(label(p))) { const s = document.createElement('span'); s.textContent = label(p); box.appendChild(s); } });
+}
+
+function renderIntro(st) {
+  show('vIntro');
+  $('introNo').textContent = `${st.sIdx + 1}부`;
+  $('introName').textContent = st.section.name;
+  $('introSub').textContent = `${st.section.count}문제`;
+  $('secTrack').innerHTML = st.sections.map((s, i) =>
+    `<span class="${i === st.sIdx ? 'now' : i < st.sIdx ? 'done' : ''}">${i + 1}부 ${esc(s.name)}</span>`).join('');
+}
+
+function renderQuestion(st) {
   show('vQuestion');
   const q = st.question;
-  $('qNo').textContent = 'Q' + (st.qIndex + 1);
+  $('qNo').textContent = 'Q' + (st.qIdx + 1);
+  $('qSec').textContent = `${st.section.name} · ${st.qIdx + 1}/${st.section.count}`;
+  $('qPts').textContent = q.points + '점';
   $('qText').textContent = q.text;
   const box = $('opts');
-  const key = st.qIndex + '|' + q.options.join('|');
+  const key = st.sIdx + ':' + st.qIdx + '|' + q.options.join('|');
   if (key !== optKey) {
     optKey = key;
     box.innerHTML = '';
@@ -199,15 +269,82 @@ function render(st) {
     d.querySelector('.cnt').textContent = revealed ? (dist[i] || 0) + '명' : '';
     d.querySelector('.fill').style.width = revealed ? ((dist[i] || 0) / max * 100) + '%' : '0';
   });
-  if (st.phase === 'open') $('status').innerHTML = `제출 <b>${st.answered}</b> / ${st.contenders}명`;
-  else if (st.phase === 'locked') $('status').innerHTML = `<b>마감!</b> 제출 ${st.answered} / ${st.contenders}명 · 정답 공개 대기`;
-  else if (revealed) $('status').innerHTML = `정답 <b>${q.answer + 1}번</b> · 통과 <b>${st.aliveCount}</b>명 · 탈락 <b>${st.eliminatedNow.length}</b>명`;
-  $('outlist').textContent = revealed && st.eliminatedNow.length ? '탈락: ' + st.eliminatedNow.join(', ') : '';
+  if (st.phase === 'open') $('status').innerHTML = `제출 <b>${st.answered}</b> / ${st.total}명`;
+  else if (st.phase === 'locked') $('status').innerHTML = `<b>마감!</b> 제출 ${st.answered} / ${st.total}명 · 정답 공개 대기`;
+  else if (revealed) {
+    const r = st.reveal || {};
+    let s = `정답 <b>${q.answer + 1}번</b> · 정답자 <b>${r.correctCount || 0}</b>명`;
+    if (r.fastest) s += ` · 가장 빨리 맞힌 사람 ${esc(r.fastest.avatar)} <b>${esc(r.fastest.name)}</b> (${(r.fastest.ms / 1000).toFixed(1)}초)`;
+    $('status').innerHTML = s;
+  }
   tick();
 }
 
+function renderBoard(st) {
+  show('vBoard');
+  const b = st.board;
+  const isSection = b.scope === 'section';
+  const t = $('boardTitle');
+  t.innerHTML = '';
+  const sm = document.createElement('small');
+  sm.textContent = isSection ? `${st.sIdx + 1}부 부문 순위` : (b.sectionDone ? `${st.sIdx + 1}부 '${b.sectionName}' 종료` : `${st.sIdx + 1}부 진행 중`);
+  t.append(sm, isSection ? `'${b.sectionName}' 부문 순위` : '중간 집계');
+  const key = JSON.stringify([b.scope, st.sIdx, b.rows]);
+  if (key === boardKey) return;
+  boardKey = key;
+  const box = $('boardList');
+  const two = b.rows.length > 6;
+  box.className = 'board ' + (two ? 'two' : 'one');
+  box.style.gridTemplateRows = two ? `repeat(${Math.ceil(b.rows.length / 2)}, auto)` : '';
+  box.innerHTML = '';
+  const n = b.rows.length;
+  b.rows.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.className = 'brow' + (r.rank <= 3 && (isSection ? r.section : r.total) > 0 ? ' r' + r.rank : '');
+    d.style.animationDelay = ((n - i) * 220) + 'ms';   // 아래 순위부터 차례로 등장
+    d.innerHTML = '<span class="rk"></span><span class="ava"></span><span class="nm"></span><span class="sc"></span>';
+    d.querySelector('.rk').textContent = r.rank;
+    d.querySelector('.ava').textContent = r.avatar;
+    d.querySelector('.nm').textContent = r.name;
+    const sc = d.querySelector('.sc');
+    sc.textContent = (isSection ? r.section : r.total) + '점';
+    const small = document.createElement('small');
+    small.textContent = isSection ? `누적 ${r.total}` : `이번 부문 ${r.section}`;
+    if (st.sIdx >= 0) sc.appendChild(small);
+    box.appendChild(d);
+  });
+  if (!n) box.innerHTML = '<p class="dim" style="text-align:center">아직 참가자가 없습니다.</p>';
+}
+
+function renderEnd(st) {
+  show('vEnd');
+  const rows = st.board.rows;
+  const key = JSON.stringify(rows);
+  if (key === endKey) return;
+  endKey = key;
+  const top = rows.filter(r => r.rank <= 3);
+  const order = [top.find(r => r.rank === 2), top.find(r => r.rank === 1), top.find(r => r.rank === 3)];
+  // 공동 순위가 있으면 순위별 첫 사람만 시상대에, 나머지는 아래 목록에
+  const shown = new Set();
+  $('podium').innerHTML = '';
+  order.forEach(r => {
+    if (!r) return;
+    shown.add(r);
+    const d = document.createElement('div');
+    d.className = 'pod p' + r.rank;
+    d.innerHTML = '<span class="ava"></span><span class="nm"></span><div class="block"><b></b><span></span></div>';
+    d.querySelector('.ava').textContent = r.avatar;
+    d.querySelector('.nm').textContent = r.name;
+    d.querySelector('b').textContent = r.rank;
+    d.querySelector('.block span').textContent = r.total + '점';
+    $('podium').appendChild(d);
+  });
+  $('rest').innerHTML = rows.filter(r => !shown.has(r))
+    .map(r => `<span>${r.rank}위 ${esc(r.avatar)} <b>${esc(r.name)}</b> ${r.total}점</span>`).join('');
+}
+
 function tick() {
-  if (!S || !S.question || S.phase === 'ended') return;
+  if (!S || !S.question || !['open', 'locked', 'revealed'].includes(S.phase)) return;
   const total = (S.question.time || 1) * 1000;
   const left = S.phase === 'open' ? Math.max(0, endAt - Date.now()) : 0;
   const sec = Math.ceil(left / 1000);

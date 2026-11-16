@@ -6,90 +6,114 @@
 <meta name="theme-color" content="#11133a">
 <title>골든벨</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/common.css">
+<script src="/shared.js"></script>
 <style>
   body { display: flex; flex-direction: column; min-height: 100%; }
-  .wrap { width: 100%; max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; flex-direction: column; gap: 16px; flex: 1; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .brand { font-family: var(--font-display); font-size: 20px; color: var(--gold); display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .wrap { width: 100%; max-width: 520px; margin: 0 auto; padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; flex-direction: column; gap: 16px; flex: 1; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; }
+  .brand { font-family: var(--font-display); font-size: 20px; color: var(--accent); display: flex; align-items: center; gap: 6px; min-width: 0; }
   .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .me { font-size: 14px; display: flex; align-items: center; gap: 8px; min-width: 0; flex: none; }
-  .me b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 8em; }
-  .pill { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; background: var(--stage-3); white-space: nowrap; }
-  .pill.alive { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
-  .pill.out { background: color-mix(in srgb, var(--bad) 22%, transparent); color: var(--bad); }
+  .me { font-size: 14px; display: flex; align-items: center; gap: 6px; min-width: 0; flex: none; }
+  .me .ava { font-size: 20px; }
+  .me b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 7em; }
+  .pill { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; background: var(--accent); color: var(--on-accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
   .center { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 18px; text-align: center; }
-  .hero-bell { width: 92px; height: 92px; margin: 0 auto; filter: drop-shadow(0 8px 24px rgba(244,197,66,.35)); }
-  .title { font-size: clamp(34px, 10vw, 46px); line-height: 1.1; }
-  .title em { font-style: normal; color: var(--gold); }
+  .hero-bell { width: 84px; height: 84px; margin: 0 auto; filter: drop-shadow(0 8px 24px color-mix(in srgb, var(--accent) 40%, transparent)); }
+  .title { font-size: clamp(32px, 9.5vw, 44px); line-height: 1.12; }
+  .title em { font-style: normal; color: var(--accent); }
   form { display: flex; flex-direction: column; gap: 10px; text-align: left; }
-  label { font-size: 14px; color: var(--ink-dim); }
-  input[type=text] { width: 100%; padding: 14px 16px; font-size: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--stage-2); }
+  label, .lbl { font-size: 14px; color: var(--ink-dim); }
+  input[type=text] { width: 100%; padding: 14px 16px; font-size: 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
   .err { color: var(--bad); font-size: 14px; min-height: 1.4em; margin: 0; }
   .big-btn { padding: 16px; font-size: 18px; border-radius: 12px; }
 
+  /* 아바타 고르기 */
+  .picked-ava { display: flex; align-items: center; gap: 12px; }
+  .picked-ava .ava { font-size: 44px; width: 64px; height: 64px; display: grid; place-items: center; border-radius: 18px; background: var(--surface); border: 2px solid var(--accent); }
+  .ava-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ava-tabs button { border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 5px 12px; font-size: 14px; color: var(--ink-dim); }
+  .ava-tabs button[aria-pressed=true] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+  .ava-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; }
+  .ava-grid button { font-size: 26px; height: 48px; border-radius: 12px; border: 2px solid transparent; background: var(--surface); }
+  .ava-grid button[aria-pressed=true] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
+
   .stat-row { display: flex; justify-content: center; gap: 28px; }
-  .stat b { display: block; font-family: var(--font-display); font-size: 40px; line-height: 1; color: var(--gold); }
+  .stat b { display: block; font-family: var(--font-display); font-weight: 400; font-size: 40px; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
   .stat span { font-size: 13px; color: var(--ink-dim); }
+  .big-ava { font-size: 76px; }
+
+  .eyebrow { font-size: 14px; font-weight: 700; color: var(--ink-dim); letter-spacing: .06em; }
+  .sec-name { font-size: clamp(36px, 11vw, 52px); color: var(--accent); line-height: 1.1; }
 
   #vQuestion { display: flex; flex-direction: column; gap: 14px; }
   .qhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-  .qno { font-family: var(--font-display); color: var(--gold); font-size: 18px; }
+  .qno { font-family: var(--font-display); color: var(--accent); font-size: 17px; }
+  .qno small { font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--ink-dim); margin-left: 6px; }
   .timer { font-family: var(--font-display); font-size: 28px; font-variant-numeric: tabular-nums; }
   .timer.hurry { color: var(--bad); }
-  .bar { height: 6px; border-radius: 6px; background: var(--stage-3); overflow: hidden; }
-  .bar i { display: block; height: 100%; width: 100%; background: var(--gold); transform-origin: left; }
-  .qtext { font-size: clamp(20px, 5.6vw, 26px); font-weight: 900; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; }
+  .bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
+  .qtext { font-size: clamp(20px, 5.6vw, 26px); font-weight: 900; line-height: 1.4; }
   .opts { display: grid; gap: 10px; }
   .opt {
     display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
     padding: 16px 14px; border-radius: var(--radius); border: 3px solid transparent;
-    background: color-mix(in srgb, var(--c) 82%, #000); color: #fff; font-size: 18px; font-weight: 700;
-    min-height: 64px; word-break: keep-all; overflow-wrap: anywhere;
+    background: var(--c); color: var(--on); font-size: 18px; font-weight: 700; min-height: 64px;
     transition: transform .08s, opacity .2s, border-color .2s;
   }
   .opt:active { transform: scale(.98); }
-  .opt.picked { border-color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 40%, transparent); }
+  .opt.picked { border-color: var(--ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 40%, transparent); }
   .opts.has-pick .opt:not(.picked) { opacity: .45; }
   .opt:disabled { cursor: default; }
   .note { text-align: center; font-size: 15px; color: var(--ink-dim); min-height: 1.5em; margin: 0; }
 
-  .verdict { font-size: clamp(56px, 18vw, 84px); line-height: 1; }
+  .verdict { font-size: clamp(54px, 17vw, 80px); line-height: 1; }
   .verdict.ok { color: var(--ok); }
   .verdict.bad { color: var(--bad); }
-  .verdict.gold { color: var(--gold); }
+  .verdict.gold { color: var(--accent); }
   .pop { animation: pop .5s cubic-bezier(.2, 1.6, .4, 1); }
   @keyframes pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .ring { animation: ring 1.2s ease-in-out infinite; transform-origin: 50% 10%; }
   @keyframes ring { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-4deg); } }
-  .conn { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); transform: translateX(-50%); background: var(--bad); color: #fff; font-size: 13px; padding: 6px 14px; border-radius: 99px; }
+  .myrank { font-size: clamp(56px, 18vw, 84px); color: var(--accent); line-height: 1; }
+  .myrank small { font-size: .35em; color: var(--ink-dim); }
+  .board { text-align: left; font-size: 15px; }
+  .conn { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); transform: translateX(-50%); background: var(--bad); color: var(--on-bad); font-size: 13px; padding: 6px 14px; border-radius: 99px; }
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="bell" viewBox="0 0 64 64">
-    <path d="M32 4a4 4 0 0 1 4 4v2.4c9.3 1.9 16 10 16 19.6v12l5 7.5a2 2 0 0 1-1.7 3.1H8.7A2 2 0 0 1 7 49.5L12 42V30c0-9.6 6.7-17.7 16-19.6V8a4 4 0 0 1 4-4Z" fill="#f4c542"/>
-    <path d="M20 30c0-6 4-11 10-12" stroke="#fff6c9" stroke-width="3" stroke-linecap="round" fill="none" opacity=".7"/>
-    <circle cx="32" cy="57" r="5" fill="#c8951c"/>
+    <path style="fill:var(--accent)" d="M32 4a4 4 0 0 1 4 4v2.4c9.3 1.9 16 10 16 19.6v12l5 7.5a2 2 0 0 1-1.7 3.1H8.7A2 2 0 0 1 7 49.5L12 42V30c0-9.6 6.7-17.7 16-19.6V8a4 4 0 0 1 4-4Z"/>
+    <path d="M20 30c0-6 4-11 10-12" stroke="#fff" stroke-width="3" stroke-linecap="round" fill="none" opacity=".45"/>
+    <circle style="fill:color-mix(in srgb, var(--accent) 65%, #000)" cx="32" cy="57" r="5"/>
   </symbol>
 </svg>
 
 <div class="wrap">
   <header>
     <div class="brand"><svg class="bell"><use href="#bell"/></svg><span class="evt">골든벨</span></div>
-    <div class="me hidden" id="me"><b id="meName"></b><span class="pill" id="mePill"></span></div>
+    <div class="me hidden" id="me"><span class="ava" id="meAva"></span><b id="meName"></b><span class="pill" id="mePill"></span></div>
   </header>
 
   <!-- 입장 -->
-  <section class="center" id="vJoin">
-    <svg class="hero-bell"><use href="#bell"/></svg>
-    <h1 class="title"><span class="evt">골든벨</span><br><em>도전!</em></h1>
-    <p class="dim" style="margin:0">닉네임을 정하고 입장하세요. 문제를 맞히면 통과, 틀리면 탈락. 끝까지 살아남은 사람이 골든벨을 울립니다.</p>
+  <section class="center" id="vJoin" style="justify-content:flex-start;padding-top:8px">
+    <h1 class="title"><span class="evt">골든벨</span> <em>도전!</em></h1>
+    <p class="dim" style="margin:0">아바타와 닉네임을 정하고 입장하세요. 문제를 맞힐 때마다 점수가 쌓이고, 점수로 순위가 정해집니다.</p>
     <form id="joinForm" autocomplete="off">
-      <label for="nick">닉네임 (최대 16자)</label>
-      <input type="text" id="nick" maxlength="16" placeholder="예: 3조 홍길동" enterkeyhint="go" required>
+      <div class="picked-ava">
+        <span class="ava" id="pickedAva" aria-label="선택한 아바타"></span>
+        <div style="display:grid;gap:6px;flex:1;min-width:0">
+          <label for="nick">닉네임 (최대 16자)</label>
+          <input type="text" id="nick" maxlength="16" placeholder="예: 3조 홍길동" enterkeyhint="go" required>
+        </div>
+      </div>
+      <span class="lbl" id="avaLbl">아바타 고르기</span>
+      <div class="ava-tabs" id="avaTabs" role="group" aria-labelledby="avaLbl"></div>
+      <div class="ava-grid" id="avaGrid"></div>
       <p class="err" id="joinErr" role="alert"></p>
       <button class="btn btn-gold big-btn" type="submit" id="joinBtn">입장하기</button>
     </form>
@@ -97,14 +121,21 @@
 
   <!-- 대기 -->
   <section class="center hidden" id="vLobby">
-    <svg class="hero-bell"><use href="#bell"/></svg>
+    <div class="big-ava ava" id="lobbyAva"></div>
     <h2 class="title" id="lobbyTitle">곧 시작합니다</h2>
     <p class="dim" style="margin:0" id="lobbySub">화면을 켜 둔 채로 기다려 주세요.</p>
     <div class="stat-row">
-      <div class="stat"><b class="tabular" id="lTotal">0</b><span>참가자</span></div>
-      <div class="stat"><b class="tabular" id="lAlive">0</b><span>생존</span></div>
+      <div class="stat"><b id="lTotal">0</b><span>참가자</span></div>
+      <div class="stat"><b id="lScore">0</b><span>내 점수</span></div>
     </div>
     <p class="dim" style="margin:0;font-size:14px" id="lobbyMsg"></p>
+  </section>
+
+  <!-- 부문 소개 -->
+  <section class="center hidden" id="vIntro">
+    <div class="eyebrow" id="introNo"></div>
+    <h2 class="sec-name pop" id="introName"></h2>
+    <p class="dim" style="margin:0" id="introSub"></p>
   </section>
 
   <!-- 문제 -->
@@ -119,23 +150,33 @@
     <p class="note" id="qNote" aria-live="polite"></p>
   </section>
 
-  <!-- 결과 -->
+  <!-- 정답 공개 -->
   <section class="center hidden" id="vResult">
-    <div class="verdict display pop" id="verdict"></div>
+    <div class="verdict display" id="verdict"></div>
     <p style="margin:0;font-size:18px;font-weight:700" id="resultSub"></p>
     <div class="stat-row">
-      <div class="stat"><b class="tabular" id="rAlive">0</b><span>생존</span></div>
-      <div class="stat"><b class="tabular" id="rOut">0</b><span>이번 탈락</span></div>
+      <div class="stat"><b id="rScore">0</b><span>내 점수</span></div>
+      <div class="stat" id="rRankBox"><b id="rRank">-</b><span>현재 순위</span></div>
     </div>
     <p class="dim" style="margin:0" id="resultMsg"></p>
+  </section>
+
+  <!-- 순위 -->
+  <section class="center hidden" id="vBoard">
+    <div class="eyebrow" id="boardTitle"></div>
+    <div id="boardMine">
+      <div class="myrank display" id="bRank"></div>
+      <p style="margin:6px 0 0;font-weight:700" id="bScore"></p>
+    </div>
+    <div class="board" id="boardList"></div>
   </section>
 
   <!-- 종료 -->
   <section class="center hidden" id="vEnd">
     <svg class="hero-bell ring"><use href="#bell"/></svg>
-    <div class="verdict display gold pop" id="endTitle">골든벨!</div>
+    <div class="verdict display gold pop" id="endTitle"></div>
     <p style="margin:0;font-size:18px;font-weight:700" id="endSub"></p>
-    <p class="dim" style="margin:0" id="endWinners"></p>
+    <div class="board" id="endList"></div>
   </section>
 </div>
 <div class="conn hidden" id="conn">연결이 끊겼습니다. 다시 연결하는 중…</div>
@@ -150,21 +191,50 @@ const store = {
 };
 const NUMS = ['①','②','③','④','⑤'];
 const socket = io({ transports: ['websocket', 'polling'] });
-let S = null, joined = false, endAt = 0, lastRenderKey = '';
+let S = null, joined = false, endAt = 0, lastRenderKey = '', lastView = '', lastThemeKey = '';
 
 function show(view) {
-  for (const v of ['vJoin','vLobby','vQuestion','vResult','vEnd']) $(v).classList.toggle('hidden', v !== view);
+  for (const v of ['vJoin','vLobby','vIntro','vQuestion','vResult','vBoard','vEnd']) $(v).classList.toggle('hidden', v !== view);
+  const changed = view !== lastView; lastView = view; return changed;
 }
-function setTitle(t) {
-  if (!t) return;
-  document.title = t;
-  document.querySelectorAll('.evt').forEach(e => { e.textContent = t; });
+function applyCommon(st) {
+  if (st.title) { document.title = st.title; document.querySelectorAll('.evt').forEach(e => { e.textContent = st.title; }); }
+  const k = JSON.stringify(st.theme);
+  if (k !== lastThemeKey) { lastThemeKey = k; GB.applyTheme(st.theme); }
 }
 
+// ---------- 아바타 고르기 ----------
+let avatar = store.get('gb_avatar');
+if (!GB.AVATARS.includes(avatar)) {
+  const animals = GB.AVATAR_GROUPS[0].items;
+  avatar = animals[Math.floor(Math.random() * animals.length)];
+}
+let avaGroup = Math.max(0, GB.AVATAR_GROUPS.findIndex(g => g.items.includes(avatar)));
+function renderAvatarPicker() {
+  $('pickedAva').textContent = avatar;
+  $('avaTabs').innerHTML = '';
+  GB.AVATAR_GROUPS.forEach((g, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = g.name; b.setAttribute('aria-pressed', i === avaGroup);
+    b.addEventListener('click', () => { avaGroup = i; renderAvatarPicker(); });
+    $('avaTabs').appendChild(b);
+  });
+  $('avaGrid').innerHTML = '';
+  GB.AVATAR_GROUPS[avaGroup].items.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ava'; b.textContent = a; b.setAttribute('aria-pressed', a === avatar);
+    b.setAttribute('aria-label', '아바타 ' + a);
+    b.addEventListener('click', () => { avatar = a; store.set('gb_avatar', a); renderAvatarPicker(); });
+    $('avaGrid').appendChild(b);
+  });
+}
+renderAvatarPicker();
+
+// ---------- 입장 ----------
 function tryRejoin() {
   const id = store.get('gb_pid');
   if (!id) return show('vJoin');
-  socket.emit('player:join', { playerId: id, name: store.get('gb_name') || '' }, res => {
+  socket.emit('player:join', { playerId: id }, res => {
     if (res.ok) { onJoined(res); if (S) render(S); }
     else { store.del('gb_pid'); show('vJoin'); $('joinErr').textContent = res.error || ''; }
   });
@@ -174,16 +244,16 @@ function onJoined(res) {
   store.set('gb_pid', res.playerId);
   store.set('gb_name', res.name);
   $('meName').textContent = res.name;
+  $('meAva').textContent = res.avatar;
   $('me').classList.remove('hidden');
 }
-
 $('nick').value = store.get('gb_name') || '';
 $('joinForm').addEventListener('submit', e => {
   e.preventDefault();
   const name = $('nick').value.trim();
   if (!name) { $('joinErr').textContent = '닉네임을 입력해 주세요.'; return; }
   $('joinBtn').disabled = true;
-  socket.emit('player:join', { name }, res => {
+  socket.emit('player:join', { name, avatar }, res => {
     $('joinBtn').disabled = false;
     if (!res.ok) { $('joinErr').textContent = res.error; return; }
     $('joinErr').textContent = '';
@@ -206,71 +276,80 @@ socket.on('kicked', msg => {
 });
 socket.on('state', st => {
   S = st;
-  setTitle(st.title);
+  applyCommon(st);
   endAt = Date.now() + (st.timeLeft || 0);
   if (joined && st.me) render(st);
 });
 
+// ---------- 화면 그리기 ----------
+function boardRows(el, rows, myName) {
+  el.innerHTML = '';
+  rows.forEach((r, i) => {
+    const d = document.createElement('div');
+    d.className = 'brow' + (r.rank <= 3 && r.score > 0 ? ' r' + r.rank : '') + (r.name === myName ? ' mine' : '');
+    d.style.animationDelay = (i * 60) + 'ms';
+    d.innerHTML = '<span class="rk"></span><span class="ava"></span><span class="nm"></span><span class="sc"></span>';
+    d.querySelector('.rk').textContent = r.rank;
+    d.querySelector('.ava').textContent = r.avatar;
+    d.querySelector('.nm').textContent = r.name;
+    d.querySelector('.sc').textContent = r.score + '점';
+    el.appendChild(d);
+  });
+}
+
 function render(st) {
   const me = st.me;
-  if (!me) return;
   $('meName').textContent = me.name;
-  $('mePill').textContent = me.alive ? '생존' : '탈락';
-  $('mePill').className = 'pill ' + (me.alive ? 'alive' : 'out');
+  $('meAva').textContent = me.avatar;
+  $('mePill').textContent = me.score + '점' + (st.showRank && me.rank ? ` · ${me.rank}위` : '');
 
-  if (st.phase === 'lobby' || !st.question) {
-    show('vLobby');
-    $('lTotal').textContent = st.total;
-    $('lAlive').textContent = st.aliveCount;
-    $('lobbyTitle').textContent = st.qIndex < 0 ? '곧 시작합니다' : '잠시 대기';
-    $('lobbySub').textContent = me.alive ? '화면을 켜 둔 채로 기다려 주세요.' : '지금은 관전 중입니다. 패자부활을 노려 보세요.';
-    $('lobbyMsg').textContent = st.message || '';
+  if (st.phase === 'intro' && st.section) {
+    const changed = show('vIntro');
+    $('introNo').textContent = `${st.sIdx + 1}부`;
+    $('introName').textContent = st.section.name;
+    $('introSub').textContent = `${st.section.count}문제 · 곧 첫 문제가 나옵니다`;
+    if (changed) { const n = $('introName'); n.classList.remove('pop'); void n.offsetWidth; n.classList.add('pop'); }
     return;
   }
-  if (st.phase === 'ended') {
-    show('vEnd');
-    const winners = st.survivors || [];
-    const iWon = me.alive;
-    $('endTitle').textContent = iWon ? '골든벨!' : '게임 종료';
-    $('endSub').textContent = iWon ? `${me.name}님, 끝까지 살아남았습니다!` : `${me.correctCount}문제를 맞혔습니다. 수고하셨어요!`;
-    $('endWinners').textContent = winners.length ? `최종 생존: ${winners.join(', ')}` : '';
-    return;
-  }
-  if (st.phase === 'revealed') { renderResult(st); return; }
-  renderQuestion(st);
+  if (st.phase === 'board' && st.board) { renderBoard(st); return; }
+  if (st.phase === 'ended' && st.board) { renderEnd(st); return; }
+  if (st.phase === 'revealed' && st.question) { renderResult(st); return; }
+  if ((st.phase === 'open' || st.phase === 'locked') && st.question) { renderQuestion(st); return; }
+
+  show('vLobby');
+  $('lobbyAva').textContent = me.avatar;
+  $('lTotal').textContent = st.total;
+  $('lScore').textContent = me.score;
+  $('lobbyTitle').textContent = st.sIdx < 0 ? '곧 시작합니다' : '잠시 대기';
+  $('lobbySub').textContent = '화면을 켜 둔 채로 기다려 주세요.';
+  $('lobbyMsg').textContent = st.message || '';
 }
 
 function renderQuestion(st) {
   show('vQuestion');
   const q = st.question, me = st.me;
-  $('qNo').textContent = `Q${st.qIndex + 1} / ${st.qTotal}`;
+  $('qNo').innerHTML = '';
+  $('qNo').append(`${st.section.name} · ${st.qIdx + 1}/${st.section.count}`);
+  const sm = document.createElement('small'); sm.textContent = `${q.points}점`; $('qNo').appendChild(sm);
   $('qText').textContent = q.text;
-  const key = st.qIndex + '|' + q.options.join('|');
+  const key = st.sIdx + ':' + st.qIdx + '|' + q.options.join('|');
   const box = $('opts');
   if (key !== lastRenderKey) {
     lastRenderKey = key;
     box.innerHTML = '';
     q.options.forEach((t, i) => {
       const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'opt o' + i;
-      b.id = 'opt' + i;
+      b.type = 'button'; b.className = 'opt o' + i; b.id = 'opt' + i;
       b.innerHTML = `<span class="opt-badge">${i + 1}</span><span class="t"></span>`;
       b.querySelector('.t').textContent = t;
       b.addEventListener('click', () => answer(i));
       box.appendChild(b);
     });
   }
-  const can = me.canAnswer;
   box.classList.toggle('has-pick', me.answer != null);
-  [...box.children].forEach((b, i) => {
-    b.disabled = !can;
-    b.classList.toggle('picked', me.answer === i);
-  });
-  let note = '';
-  if (!me.alive) note = '탈락 — 관전 중입니다.';
-  else if (st.phase === 'locked') note = me.answer != null ? `${NUMS[me.answer]} 제출 완료 · 마감! 정답 공개를 기다리세요.` : '마감! 답을 내지 못했습니다.';
-  else if (!can) note = '이번 문제는 다음 문제부터 참여할 수 있습니다.';
+  [...box.children].forEach((b, i) => { b.disabled = !me.canAnswer; b.classList.toggle('picked', me.answer === i); });
+  let note;
+  if (st.phase === 'locked') note = me.answer != null ? `${NUMS[me.answer]} 제출 완료 · 정답 공개를 기다리세요.` : '마감! 답을 내지 못했습니다.';
   else if (me.answer != null) note = `${NUMS[me.answer]} 선택됨 · 마감 전까지 바꿀 수 있어요.`;
   else note = '정답을 고르세요!';
   $('qNote').textContent = note;
@@ -278,42 +357,69 @@ function renderQuestion(st) {
 }
 
 function renderResult(st) {
-  show('vResult');
-  const me = st.me, q = st.question;
-  const outNow = st.eliminatedNow.includes(me.name);
+  const changed = show('vResult');
+  const me = st.me, q = st.question, r = me.result;
   const v = $('verdict');
-  if (outNow) { v.textContent = '탈락'; v.className = 'verdict display bad'; }
-  else if (me.alive) { v.textContent = '통과!'; v.className = 'verdict display ok'; }
-  else { v.textContent = '관전 중'; v.className = 'verdict display'; }
-  void v.offsetWidth; v.classList.add('pop');
+  if (r && r.correct) { v.textContent = `정답! +${r.points}`; v.className = 'verdict display ok'; }
+  else if (me.answer == null) { v.textContent = '미제출'; v.className = 'verdict display bad'; }
+  else { v.textContent = '오답'; v.className = 'verdict display bad'; }
+  if (changed) { void v.offsetWidth; v.classList.add('pop'); }
   $('resultSub').textContent = `정답: ${NUMS[q.answer]} ${q.options[q.answer]}`;
-  $('rAlive').textContent = st.aliveCount;
-  $('rOut').textContent = st.eliminatedNow.length;
-  $('resultMsg').textContent = st.message || (me.alive ? '다음 문제를 기다리세요.' : '');
+  $('rScore').textContent = me.score;
+  $('rRankBox').classList.toggle('hidden', !st.showRank);
+  $('rRank').textContent = me.rank ? me.rank + '위' : '-';
+  const rv = st.reveal;
+  $('resultMsg').textContent = st.message || (rv ? `정답자 ${rv.correctCount}명 / 제출 ${rv.answered}명` : '');
+}
+
+function renderBoard(st) {
+  show('vBoard');
+  const b = st.board, me = st.me;
+  const isSection = b.scope === 'section';
+  $('boardTitle').textContent = isSection ? `${st.sIdx + 1}부 '${b.sectionName}' 부문 순위` : (b.sectionDone ? `${st.sIdx + 1}부 종료 · 중간 집계` : '현재 순위');
+  const rank = isSection ? me.sectionRank : me.rank;
+  $('boardMine').classList.toggle('hidden', !st.showRank);
+  $('bRank').innerHTML = '';
+  $('bRank').append(String(rank || '-'));
+  const sm = document.createElement('small'); sm.textContent = ` 위 / ${me.of}명`; $('bRank').appendChild(sm);
+  $('bScore').textContent = isSection ? `이번 부문 ${me.sectionScore}점 · 누적 ${me.score}점` : `누적 ${me.score}점 · 맞힌 문제 ${me.correct}개`;
+  const rows = b.rows.slice(0, 5).map(r => ({ ...r, score: isSection ? r.section : r.total }));
+  boardRows($('boardList'), rows, me.name);
+}
+
+function renderEnd(st) {
+  const changed = show('vEnd');
+  const me = st.me;
+  const t = $('endTitle');
+  if (me.rank === 1) t.textContent = '우승!';
+  else t.textContent = st.showRank && me.rank ? `최종 ${me.rank}위` : '게임 종료';
+  if (changed) { void t.offsetWidth; t.classList.add('pop'); }
+  $('endSub').textContent = `${me.score}점 · 맞힌 문제 ${me.correct}개`;
+  boardRows($('endList'), st.board.rows.slice(0, 5).map(r => ({ ...r, score: r.total })), me.name);
 }
 
 function answer(i) {
   if (!S || !S.me || !S.me.canAnswer) return;
-  S.me.answer = i; // 바로 화면에 반영
+  S.me.answer = i;
   renderQuestion(S);
   if (navigator.vibrate) try { navigator.vibrate(20); } catch {}
-  socket.emit('player:answer', { choice: i }, res => {
-    if (!res.ok) $('qNote').textContent = res.error;
-  });
+  socket.emit('player:answer', { choice: i }, res => { if (!res.ok) $('qNote').textContent = res.error; });
 }
 
 function tick() {
-  if (!S || !S.question) return;
+  if (!S || !S.question || lastView !== 'vQuestion') return;
   const total = (S.question.time || 1) * 1000;
   const left = S.phase === 'open' ? Math.max(0, endAt - Date.now()) : 0;
   const sec = Math.ceil(left / 1000);
   $('timer').textContent = S.phase === 'open' ? sec : '마감';
   $('timer').classList.toggle('hurry', S.phase === 'open' && sec <= 5);
   $('timerBar').style.transform = `scaleX(${S.phase === 'open' ? Math.min(1, left / total) : 0})`;
+  if (S.phase === 'open' && left <= 0 && S.me) {
+    [...$('opts').children].forEach(b => { b.disabled = true; });
+  }
 }
 setInterval(tick, 200);
 
-// 화면 꺼짐 방지 (지원 기기만)
 async function keepAwake() { try { await navigator.wakeLock?.request('screen'); } catch {} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
 keepAwake();
