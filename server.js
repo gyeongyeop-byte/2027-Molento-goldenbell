@@ -1,6 +1,7 @@
 // 골든벨 — 실시간 객관식 점수제 퀴즈 서버
 // 실행: npm install && npm start
 // 환경변수: PORT(기본 3000), ADMIN_PASSWORD(기본 goldenbell), PUBLIC_URL(QR 주소, 선택), EVENT_TITLE(행사 이름, 선택)
+//           GITHUB_TOKEN + GITHUB_REPO(예: 아이디/저장소이름): 넣으면 관리자가 바꾼 문제·디자인을 GitHub에 자동 저장
 
 const path = require('path');
 const fs = require('fs');
@@ -25,15 +26,17 @@ let settings = {
   tieBreak: 'time',          // time: 동점이면 맞힌 문제의 응답 시간 합이 짧은 사람이 위 / shared: 공동 순위
   showRankToPlayers: true
 };
-try {
-  const saved = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+function applySavedSettings(saved) {
+  if (!saved || typeof saved !== 'object') return;
   if (typeof saved.title === 'string' && saved.title.trim()) settings.title = saved.title.trim().slice(0, 30);
   if (saved.tieBreak === 'time' || saved.tieBreak === 'shared') settings.tieBreak = saved.tieBreak;
   if (typeof saved.showRankToPlayers === 'boolean') settings.showRankToPlayers = saved.showRankToPlayers;
-  settings.theme = GB.sanitizeTheme(saved.theme);
-} catch {}
+  if (saved.theme) settings.theme = GB.sanitizeTheme(saved.theme);
+}
+try { applySavedSettings(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'))); } catch {}
 function saveSettings() {
   try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2)); } catch (e) { console.warn('settings.json 저장 실패:', e.message); }
+  store.schedule('settings');
 }
 
 // ---------- 문제 (부문 > 문제) ----------
@@ -86,7 +89,129 @@ try {
 }
 function saveQuiz() {
   try { fs.writeFileSync(Q_FILE, JSON.stringify(quiz, null, 2)); } catch (e) { console.warn('questions.json 저장 실패:', e.message); }
+  store.schedule('quiz');
 }
+
+// ---------- 영구 저장: GitHub 저장소의 별도 브랜치에 자동 기록 ----------
+// 무료 서버는 다시 켜질 때 파일이 초기화되므로, 관리자가 바꾼 문제·디자인을
+// GitHub의 'goldenbell-data' 브랜치(saved/ 폴더)에 저장해 두고 시작할 때 읽어 온다.
+// Render는 main 브랜치만 보고 배포하므로 이 저장 때문에 서버가 재배포되지 않는다.
+const store = (() => {
+  const token = (process.env.GITHUB_TOKEN || '').trim();
+  const repo = (process.env.GITHUB_REPO || '').trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+  const branch = process.env.GITHUB_DATA_BRANCH || 'goldenbell-data';
+  const api = process.env.GITHUB_API || 'https://api.github.com';
+  const enabled = !!(token && /^[\w.-]+\/[\w.-]+$/.test(repo));
+  const FILES = { quiz: 'saved/questions.json', settings: 'saved/settings.json' };
+  const sha = {};
+  const timers = {};
+  const ver = { quiz: 0, settings: 0 };
+  const dirtyKinds = new Set();
+  const status = { enabled, ok: true, lastSaved: null, pending: false, error: '', loadedFrom: 'files' };
+  let chain = Promise.resolve();
+
+  async function gh(method, url, body) {
+    const res = await fetch(api + url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'goldenbell-server',
+        ...(body ? { 'Content-Type': 'application/json' } : {})
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const text = await res.text();
+    let data = null; try { data = JSON.parse(text); } catch {}
+    if (!res.ok) {
+      const e = new Error((data && data.message) || text.slice(0, 120) || res.statusText);
+      e.status = res.status;
+      throw e;
+    }
+    return data;
+  }
+  function explain(e) {
+    if (e.status === 401) return 'GitHub 토큰이 올바르지 않거나 만료되었습니다.';
+    if (e.status === 403) return 'GitHub 토큰에 이 저장소의 Contents 쓰기 권한이 없습니다.';
+    if (e.status === 404) return `저장소 '${repo}'를 찾을 수 없습니다. GITHUB_REPO 값과 토큰의 저장소 선택을 확인하세요.`;
+    return 'GitHub 저장 실패: ' + e.message;
+  }
+  async function ensureBranch() {
+    try { await gh('GET', `/repos/${repo}/git/ref/heads/${branch}`); return; }
+    catch (e) { if (e.status !== 404) throw e; }
+    const info = await gh('GET', `/repos/${repo}`);
+    const base = await gh('GET', `/repos/${repo}/git/ref/heads/${info.default_branch}`);
+    await gh('POST', `/repos/${repo}/git/refs`, { ref: `refs/heads/${branch}`, sha: base.object.sha });
+    console.log(`  GitHub에 저장용 브랜치 '${branch}'를 만들었습니다.`);
+  }
+  async function read(file) {
+    try {
+      const d = await gh('GET', `/repos/${repo}/contents/${file}?ref=${encodeURIComponent(branch)}`);
+      sha[file] = d.sha;
+      return Buffer.from(d.content, 'base64').toString('utf8');
+    } catch (e) { if (e.status === 404) return null; throw e; }
+  }
+  async function write(file, text, message) {
+    const body = () => ({ message, branch, content: Buffer.from(text, 'utf8').toString('base64'), ...(sha[file] ? { sha: sha[file] } : {}) });
+    try {
+      const d = await gh('PUT', `/repos/${repo}/contents/${file}`, body());
+      sha[file] = d.content.sha;
+    } catch (e) {
+      if (e.status !== 409 && e.status !== 422) throw e;
+      delete sha[file];
+      await read(file);                 // 다른 곳에서 바뀌었으면 최신 sha로 한 번 더
+      const d = await gh('PUT', `/repos/${repo}/contents/${file}`, body());
+      sha[file] = d.content.sha;
+    }
+  }
+
+  return {
+    status: () => ({ ...status }),
+    async load() {
+      if (!enabled) {
+        if (token || repo) status.error = 'GITHUB_TOKEN과 GITHUB_REPO(아이디/저장소이름)를 모두 넣어야 자동 저장이 켜집니다.';
+        status.ok = !status.error;
+        return;
+      }
+      try {
+        await ensureBranch();
+        const q = await read(FILES.quiz);
+        if (q) { quiz = sanitizeQuiz(JSON.parse(q)); status.loadedFrom = 'github'; }
+        const st = await read(FILES.settings);
+        if (st) { applySavedSettings(JSON.parse(st)); status.loadedFrom = 'github'; }
+        status.ok = true; status.error = '';
+        console.log(`  GitHub 자동 저장 켜짐 (${repo} · ${branch} 브랜치)` + (status.loadedFrom === 'github' ? ' — 저장된 문제·디자인을 불러왔습니다.' : ''));
+      } catch (e) {
+        status.ok = false; status.error = explain(e);
+        console.warn('  ' + status.error);
+      }
+    },
+    schedule(kind) {
+      if (!enabled) return;
+      dirtyKinds.add(kind); status.pending = true;
+      const v = ++ver[kind];
+      clearTimeout(timers[kind]);
+      timers[kind] = setTimeout(() => {
+        chain = chain.then(async () => {
+          if (v !== ver[kind]) return;   // 그 사이 더 새로운 변경이 예약됨
+          const file = FILES[kind];
+          const text = JSON.stringify(kind === 'quiz' ? quiz : settings, null, 2) + '\n';
+          try {
+            await write(file, text, kind === 'quiz' ? '문제 자동 저장' : '디자인·설정 자동 저장');
+            status.ok = true; status.error = ''; status.lastSaved = Date.now();
+          } catch (e) {
+            status.ok = false; status.error = explain(e);
+            console.warn('  ' + status.error);
+          }
+          if (v === ver[kind]) dirtyKinds.delete(kind);
+          status.pending = dirtyKinds.size > 0;
+          broadcast();
+        });
+      }, 1500);
+    }
+  };
+})();
 
 // ---------- 게임 상태 ----------
 // phase: lobby(대기) · intro(부문 소개) · open(답 받는 중) · locked(마감) · revealed(정답 공개)
@@ -240,6 +365,7 @@ function adminState(totalRank) {
     currentAnswer: q ? q.answer : null,
     defaultJoinUrl: defaultJoinUrl(),
     totalQuestions: totalQuestions(),
+    storage: store.status(),
     players: totalRank.map(r => ({
       id: r.p.id,
       name: r.p.name,
@@ -398,11 +524,9 @@ const commands = {
     const t = String(title || '').trim().slice(0, 30);
     if (!t) throw new Error('행사 이름을 입력해 주세요.');
     settings.title = t; saveSettings();
-    return '행사 이름을 바꿨습니다';
   },
   setTheme({ theme }) {
     settings.theme = GB.sanitizeTheme(theme); saveSettings();
-    return '디자인을 모든 화면에 적용했습니다';
   },
   setRules({ tieBreak, showRankToPlayers }) {
     if (tieBreak === 'time' || tieBreak === 'shared') settings.tieBreak = tieBreak;
@@ -519,7 +643,7 @@ io.on('connection', socket => {
   });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+store.load().finally(() => server.listen(PORT, '0.0.0.0', () => {
   const lan = defaultJoinUrl();
   console.log(`\n  ${settings.title} 서버 실행 중`);
   console.log('  ─────────────────────────────────────');
@@ -527,4 +651,4 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`  큰 화면(QR)   ${lan}screen`);
   console.log(`  관리자        ${lan}admin   (비밀번호: ${process.env.ADMIN_PASSWORD ? '환경변수로 설정됨' : ADMIN_PASSWORD})`);
   console.log('  ─────────────────────────────────────\n');
-});
+}));
