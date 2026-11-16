@@ -1,0 +1,21 @@
+{
+  "title": "골든벨",
+  "theme": {
+    "bg": "#fff0f4",
+    "surface": "#ffffff",
+    "text": "#3a1f2b",
+    "textDim": "#8c6474",
+    "accent": "#ff3d84",
+    "ok": "#1f9d63",
+    "bad": "#e0413a",
+    "opt0": "#ff5c7a",
+    "opt1": "#4c8dff",
+    "opt2": "#2bb37b",
+    "opt3": "#a066ff",
+    "opt4": "#ff9a3d",
+    "fontDisplay": "Jua",
+    "fontBody": "Gowun Dodum"
+  },
+  "tieBreak": "time",
+  "showRankToPlayers": true
+}
