@@ -19,6 +19,14 @@ const Q_FILE = path.join(__dirname, 'questions.json');
 const SETTINGS_FILE = path.join(__dirname, 'settings.json');
 const rid = () => crypto.randomBytes(5).toString('hex');
 
+// ---------- 문제 사진 ----------
+const IMG_DIR = path.join(__dirname, 'images');
+const IMG_RE = /^[a-z0-9]{8,32}\.(jpg|png|webp|gif)$/;
+const IMG_MIME = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif' };
+const IMG_MAX = 1024 * 1024;           // 올린 뒤 크기 1MB까지 (관리자 화면에서 자동으로 줄여서 보냄)
+const imgCache = new Map();            // 이름 -> Buffer
+const imgUrl = name => (name ? '/img/' + name : null);
+
 // ---------- 설정 (행사 이름, 디자인, 순위 규칙) ----------
 let settings = {
   title: process.env.EVENT_TITLE || '골든벨',
@@ -72,7 +80,8 @@ function sanitizeQuiz(data) {
             options,
             answer,
             time: Math.max(3, Math.min(300, Math.round(Number(q.time)) || 20)),
-            points: Math.max(1, Math.min(100, Math.round(Number(q.points)) || 1))
+            points: Math.max(1, Math.min(100, Math.round(Number(q.points)) || 1)),
+            ...(IMG_RE.test(String(q.image || '')) ? { image: q.image } : {})
           };
         })
       };
@@ -152,8 +161,17 @@ const store = (() => {
       return Buffer.from(d.content, 'base64').toString('utf8');
     } catch (e) { if (e.status === 404) return null; throw e; }
   }
-  async function write(file, text, message) {
-    const body = () => ({ message, branch, content: Buffer.from(text, 'utf8').toString('base64'), ...(sha[file] ? { sha: sha[file] } : {}) });
+  async function readRaw(file) {
+    const res = await fetch(api + `/repos/${repo}/contents/${file}?ref=${encodeURIComponent(branch)}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github.raw+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'goldenbell-server' }
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) { const e = new Error(res.statusText); e.status = res.status; throw e; }
+    return Buffer.from(await res.arrayBuffer());
+  }
+  async function write(file, data, message) {
+    const content = (Buffer.isBuffer(data) ? data : Buffer.from(data, 'utf8')).toString('base64');
+    const body = () => ({ message, branch, content, ...(sha[file] ? { sha: sha[file] } : {}) });
     try {
       const d = await gh('PUT', `/repos/${repo}/contents/${file}`, body());
       sha[file] = d.content.sha;
@@ -186,6 +204,28 @@ const store = (() => {
         status.ok = false; status.error = explain(e);
         console.warn('  ' + status.error);
       }
+    },
+    // 사진은 올리는 즉시 한 번만 저장 (이름이 매번 새로 만들어지므로 덮어쓰기 없음)
+    saveImage(name, buf) {
+      if (!enabled) return;
+      const key = 'img:' + name;
+      dirtyKinds.add(key); status.pending = true;
+      chain = chain.then(async () => {
+        try {
+          await write('saved/images/' + name, buf, '사진 저장');
+          status.ok = true; status.error = ''; status.lastSaved = Date.now();
+        } catch (e) {
+          status.ok = false; status.error = explain(e);
+          console.warn('  ' + status.error);
+        }
+        dirtyKinds.delete(key);
+        status.pending = dirtyKinds.size > 0;
+        broadcast();
+      });
+    },
+    async fetchImage(name) {
+      if (!enabled) return null;
+      return readRaw('saved/images/' + name);
     },
     schedule(kind) {
       if (!enabled) return;
@@ -316,8 +356,9 @@ function publicState(totalRank) {
     sections: quiz.sections.map(x => ({ name: x.name, count: x.questions.length })),
     section: s ? { name: s.name, count: s.questions.length } : null,
     question: q && ['open', 'locked', 'revealed'].includes(game.phase)
-      ? { text: q.text, options: q.options, time: q.time, points: q.points, answer: revealed ? q.answer : null }
+      ? { text: q.text, options: q.options, time: q.time, points: q.points, image: imgUrl(q.image), answer: revealed ? q.answer : null }
       : null,
+    preload: (() => { const n = s && s.questions[game.qIdx + 1]; return n && n.image ? imgUrl(n.image) : null; })(),
     timeLeft: timeLeft(),
     joinOpen: game.joinOpen,
     joinUrl: joinUrl(),
@@ -384,6 +425,31 @@ function adminState(totalRank) {
 // ---------- 서버 ----------
 const app = express();
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+const imgInflight = new Map();
+async function loadImage(name) {
+  if (imgCache.has(name)) return imgCache.get(name);
+  if (imgInflight.has(name)) return imgInflight.get(name);
+  const job = (async () => {
+    let buf = null;
+    try { buf = fs.readFileSync(path.join(IMG_DIR, name)); } catch {}
+    if (!buf) {
+      try { buf = await store.fetchImage(name); } catch (e) { console.warn('  사진을 GitHub에서 읽지 못했습니다:', name, e.message); }
+      if (buf) { try { fs.mkdirSync(IMG_DIR, { recursive: true }); fs.writeFileSync(path.join(IMG_DIR, name), buf); } catch {} }
+    }
+    if (buf) imgCache.set(name, buf);
+    return buf;
+  })();
+  imgInflight.set(name, job);
+  try { return await job; } finally { imgInflight.delete(name); }
+}
+app.get('/img/:name', async (req, res) => {
+  const name = req.params.name;
+  if (!IMG_RE.test(name)) return res.sendStatus(404);
+  const buf = await loadImage(name);
+  if (!buf) return res.sendStatus(404);
+  res.type(IMG_MIME[name.split('.').pop()]).set('Cache-Control', 'public, max-age=31536000, immutable').send(buf);
+});
+
 app.get('/qr.svg', async (req, res) => {
   try {
     const svg = await QRCode.toString(joinUrl(), { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#111111', light: '#ffffff' } });
@@ -394,7 +460,7 @@ app.get('/qr.svg', async (req, res) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { pingInterval: 10000, pingTimeout: 20000 });
+const io = new Server(server, { pingInterval: 10000, pingTimeout: 20000, maxHttpBufferSize: 3e6 });
 
 let broadcastPending = null;
 function broadcast() {
@@ -624,6 +690,23 @@ io.on('connection', socket => {
     }
   });
 
+  socket.on('admin:upload', ({ data } = {}, ack = () => {}) => {
+    if (!socket.data.admin) return ack({ ok: false, error: '관리자 인증이 필요합니다.' });
+    const m = /^data:image\/(jpeg|png|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(String(data || ''));
+    if (!m) return ack({ ok: false, error: '사진 형식을 읽을 수 없습니다 (JPG, PNG, WEBP, GIF만 가능).' });
+    const buf = Buffer.from(m[2], 'base64');
+    if (buf.length > IMG_MAX) return ack({ ok: false, error: '사진이 너무 큽니다 (1MB 이하).' });
+    const sig = buf.subarray(0, 12).toString('latin1');
+    const okSig = { jpeg: buf[0] === 0xff && buf[1] === 0xd8, png: sig.startsWith('\x89PNG'), gif: sig.startsWith('GIF8'), webp: sig.startsWith('RIFF') && sig.slice(8, 12) === 'WEBP' }[m[1]];
+    if (!okSig) return ack({ ok: false, error: '사진 파일이 손상되었거나 형식이 맞지 않습니다.' });
+    const name = crypto.randomBytes(8).toString('hex') + '.' + (m[1] === 'jpeg' ? 'jpg' : m[1]);
+    imgCache.set(name, buf);
+    try { fs.mkdirSync(IMG_DIR, { recursive: true }); fs.writeFileSync(path.join(IMG_DIR, name), buf); } catch {}
+    store.saveImage(name, buf);
+    ack({ ok: true, name, url: imgUrl(name) });
+    broadcast();
+  });
+
   socket.on('admin:cmd', ({ type, ...args } = {}, ack = () => {}) => {
     if (!socket.data.admin) return ack({ ok: false, error: '관리자 인증이 필요합니다.' });
     const fn = commands[type];
@@ -644,6 +727,9 @@ io.on('connection', socket => {
 });
 
 store.load().finally(() => server.listen(PORT, '0.0.0.0', () => {
+  // 서버가 다시 켜진 직후 첫 문제에서 사진이 늦게 뜨지 않도록 미리 받아 둠
+  const names = quiz.sections.flatMap(s => s.questions.map(q => q.image).filter(Boolean));
+  (async () => { for (const n of names) await loadImage(n); })();
   const lan = defaultJoinUrl();
   console.log(`\n  ${settings.title} 서버 실행 중`);
   console.log('  ─────────────────────────────────────');
