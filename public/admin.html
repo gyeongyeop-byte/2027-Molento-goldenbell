@@ -94,6 +94,12 @@
   .qcard .head b { font-family: var(--font-display); font-weight: 400; color: var(--accent); font-size: 17px; }
   .qcard textarea, .qcard input[type=text] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); resize: vertical; }
   .numin { width: 4.6em; padding: 5px 8px !important; }
+  .imgrow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; border: 1px dashed var(--line); }
+  .imgrow.drag { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .imgrow img { height: 84px; max-width: 160px; object-fit: contain; border-radius: 8px; background: var(--bg); }
+  .imgrow .noimg { font-size: 13px; color: var(--ink-dim); }
+  .imgrow label.btn { cursor: pointer; }
+  .qcur-img { max-height: 180px; max-width: 100%; object-fit: contain; border-radius: 10px; align-self: flex-start; background: var(--bg); }
   .ed-opt { display: flex; gap: 8px; align-items: center; }
   .ed-opt input[type=radio] { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
   .ed-opt .opt-badge { background: var(--c); color: var(--on); width: 1.7em; height: 1.7em; font-size: 13px; }
@@ -173,6 +179,7 @@
         </div>
         <div class="progress" id="progress"></div>
         <div class="qcur" id="qCur"></div>
+        <img class="qcur-img hidden" id="qCurImg" alt="문제 사진">
         <div class="olist" id="olist"></div>
         <div class="stats">
           <div class="stat"><b id="sTotal">0</b><span>참가</span></div>
@@ -245,7 +252,7 @@
       <div id="bulkBox" class="hidden" style="display:grid;gap:8px">
         <p class="help">
           <code># 부문이름</code> 줄로 부문을 시작합니다. 문제마다 빈 줄로 구분하고, 첫 줄은 질문, 다음 줄부터 보기, 정답 보기 앞에 <code>*</code>.
-          <code>시간: 20</code>, <code>점수: 2</code> 줄은 선택입니다. 이 내용을 메모장에 복사해 두면 백업이 됩니다.
+          <code>시간: 20</code>, <code>점수: 2</code>, <code>사진: (파일이름)</code> 줄은 선택입니다. 이 내용을 메모장에 복사해 두면 백업이 됩니다.
         </p>
         <textarea class="bulk" id="bulk" spellcheck="false"></textarea>
         <div class="row">
@@ -419,6 +426,9 @@ function renderRun() {
     `<span class="${i === st.sIdx ? 'now' : i < st.sIdx ? 'done' : ''}">${i + 1}부 ${esc(s.name)} (${s.count})</span>`).join('');
   const q = sec && st.qIdx >= 0 ? st.quiz.sections[st.sIdx].questions[st.qIdx] : null;
   $('qCur').textContent = q ? q.text : (st.phase === 'intro' ? `'${sec.name}' 부문 소개 화면을 띄우는 중입니다.` : '아직 시작하지 않았습니다. 무대 화면에 QR을 띄우고 참가자를 받으세요.');
+  const ci = $('qCurImg'), want = q && q.image ? '/img/' + q.image : '';
+  ci.classList.toggle('hidden', !want);
+  if (want && ci.getAttribute('src') !== want) ci.setAttribute('src', want);
   const ol = $('olist'); ol.innerHTML = '';
   if (q) {
     const dist = st.liveDistribution || [];
@@ -610,6 +620,37 @@ function renderEditor() {
     box.appendChild(el);
   });
 }
+// 사진을 화면용 크기(긴 변 1280px, JPG)로 줄여서 서버에 올림. 움직이는 GIF는 그대로 (1MB 이하)
+function readDataUrl(blob) {
+  return new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error('파일을 읽지 못했습니다.')); r.readAsDataURL(blob); });
+}
+function loadImg(file) {
+  return new Promise((ok, no) => {
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { URL.revokeObjectURL(url); ok(im); };
+    im.onerror = () => { URL.revokeObjectURL(url); no(new Error('이 사진 형식은 열 수 없습니다. JPG나 PNG로 바꿔서 올려 주세요.')); };
+    im.src = url;
+  });
+}
+async function uploadImage(file) {
+  if (!file.type.startsWith('image/')) throw new Error('사진 파일만 올릴 수 있습니다.');
+  let data;
+  if (file.type === 'image/gif') {
+    if (file.size > 1024 * 1024) throw new Error('움직이는 GIF는 1MB 이하만 올릴 수 있습니다.');
+    data = await readDataUrl(file);
+  } else {
+    const im = await loadImg(file);
+    const scale = Math.min(1, 1280 / Math.max(im.naturalWidth, im.naturalHeight));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(im.naturalWidth * scale); cv.height = Math.round(im.naturalHeight * scale);
+    const g = cv.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, cv.width, cv.height); g.drawImage(im, 0, 0, cv.width, cv.height);
+    let qy = 0.85; data = cv.toDataURL('image/jpeg', qy);
+    while (data.length * 0.75 > 900 * 1024 && qy > 0.45) { qy -= 0.1; data = cv.toDataURL('image/jpeg', qy); }
+  }
+  const r = await new Promise(res => socket.emit('admin:upload', { data }, res));
+  if (!r || !r.ok) throw new Error((r && r.error) || '사진을 올리지 못했습니다.');
+  return r.name;
+}
 function questionCard(sec, si, q, qi) {
   const live = A && si === A.sIdx && qi === A.qIdx && ['open', 'locked', 'revealed'].includes(A.phase);
   const c = document.createElement('div');
@@ -625,6 +666,12 @@ function questionCard(sec, si, q, qi) {
       <button class="btn btn-ghost mini" type="button" data-a="del" ${sec.questions.length <= 1 ? 'disabled' : ''}>삭제</button>
     </div>
     <textarea rows="2" id="q${si}_${qi}" placeholder="질문"></textarea>
+    <div class="imgrow">
+      ${q.image ? `<img src="/img/${q.image}" alt="Q${qi + 1} 사진">` : '<span class="noimg">사진 없음</span>'}
+      <label class="btn btn-ghost mini">${q.image ? '사진 바꾸기' : '사진 넣기'}<input type="file" accept="image/*" hidden></label>
+      ${q.image ? '<button class="btn btn-ghost mini" type="button" data-a="delimg">사진 빼기</button>' : ''}
+      <span class="help imgmsg">파일을 끌어다 놓거나, 질문 칸을 누른 뒤 복사한 사진을 Ctrl+V로 붙여 넣어도 됩니다.</span>
+    </div>
     <div class="opts" style="display:grid;gap:6px"></div>
     <div class="row">
       <button class="btn btn-ghost mini" type="button" data-a="addopt" ${q.options.length >= 5 ? 'disabled' : ''}>+ 보기</button>
@@ -645,8 +692,25 @@ function questionCard(sec, si, q, qi) {
     r.querySelector('input[type=radio]').addEventListener('change', () => { q.answer = oi; setDirty(true); });
     ob.appendChild(r);
   });
+  // 사진: 파일 고르기 / 끌어다 놓기 / 붙여넣기
+  const row = c.querySelector('.imgrow'), msg = c.querySelector('.imgmsg');
+  const take = async file => {
+    if (!file) return;
+    msg.textContent = '사진 올리는 중…';
+    try { q.image = await uploadImage(file); setDirty(true); renderEditor(); toast('사진을 넣었습니다. 저장을 눌러 반영하세요.'); }
+    catch (err) { msg.textContent = err.message; msg.style.color = 'var(--bad)'; }
+  };
+  c.querySelector('input[type=file]').addEventListener('change', e => take(e.target.files[0]));
+  row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag'); });
+  row.addEventListener('dragleave', () => row.classList.remove('drag'));
+  row.addEventListener('drop', e => { e.preventDefault(); row.classList.remove('drag'); take([...e.dataTransfer.files].find(f => f.type.startsWith('image/'))); });
+  c.addEventListener('paste', e => {
+    const f = [...(e.clipboardData?.files || [])].find(x => x.type.startsWith('image/'));
+    if (f) { e.preventDefault(); take(f); }
+  });
   c.addEventListener('click', e => {
     const a = e.target.dataset && e.target.dataset.a; if (!a) return;
+    if (a === 'delimg') { delete q.image; setDirty(true); renderEditor(); return; }
     if (a === 'del') { confirmClick(e.target, '삭제 확인', () => { sec.questions.splice(qi, 1); setDirty(true); renderEditor(); }); return; }
     if (a === 'up') moveItem(sec.questions, qi, -1);
     if (a === 'down') moveItem(sec.questions, qi, 1);
@@ -671,7 +735,7 @@ $('revertQ').addEventListener('click', () => { draft = clone(A.quiz); setDirty(f
 $('bulkToggle').addEventListener('click', () => { $('bulkBox').classList.toggle('hidden'); if (!$('bulk').value) exportBulk(); });
 function exportBulk() {
   $('bulk').value = draft.sections.map(s => `# ${s.name}\n\n` + s.questions.map(q =>
-    [q.text, ...q.options.map((o, i) => (i === q.answer ? '*' : '') + o), `시간: ${q.time}`, `점수: ${q.points}`].join('\n')).join('\n\n')).join('\n\n');
+    [q.text, ...q.options.map((o, i) => (i === q.answer ? '*' : '') + o), `시간: ${q.time}`, `점수: ${q.points}`, ...(q.image ? [`사진: ${q.image}`] : [])].join('\n')).join('\n\n')).join('\n\n');
 }
 $('bulkExport').addEventListener('click', exportBulk);
 $('bulkCopy').addEventListener('click', async () => {
@@ -687,10 +751,10 @@ $('bulkApply').addEventListener('click', () => {
     const ls = block.map(s => s.trim()).filter(Boolean); block = [];
     if (!ls.length) return;
     if (!cur) { cur = { name: '기본', questions: [] }; sections.push(cur); }
-    let time = 20, points = 1; const rest = [];
+    let time = 20, points = 1, image = null; const rest = [];
     for (const l of ls) {
-      const m = l.match(/^(시간|time)\s*[:：]\s*(\d+)/i), p = l.match(/^(점수|배점|points?)\s*[:：]\s*(\d+)/i);
-      if (m) time = +m[2]; else if (p) points = +p[2]; else rest.push(l);
+      const m = l.match(/^(시간|time)\s*[:：]\s*(\d+)/i), p = l.match(/^(점수|배점|points?)\s*[:：]\s*(\d+)/i), im = l.match(/^(사진|이미지|image)\s*[:：]\s*([a-z0-9]+\.(jpg|png|webp|gif))\s*$/i);
+      if (m) time = +m[2]; else if (p) points = +p[2]; else if (im) image = im[2].toLowerCase(); else rest.push(l);
     }
     const text = rest.shift();
     const label = `'${cur.name}' ${cur.questions.length + 1}번째 문제`;
@@ -698,7 +762,7 @@ $('bulkApply').addEventListener('click', () => {
     const options = rest.map(l => strip(l.replace(/^\*\s*/, '')));
     if (options.length < 2 || options.length > 5) throw new Error(`${label}: 보기는 2~5개여야 합니다.`);
     if (answer < 0) throw new Error(`${label}: 정답 보기 앞에 * 를 붙여 주세요.`);
-    cur.questions.push({ text, options, answer, time, points });
+    cur.questions.push({ text, options, answer, time, points, ...(image ? { image } : {}) });
   };
   try {
     for (const raw of lines) {

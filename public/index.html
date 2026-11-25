@@ -57,6 +57,7 @@
   .bar { height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
   .bar i { display: block; height: 100%; width: 100%; background: var(--accent); transform-origin: left; }
   .qtext { font-size: clamp(20px, 5.6vw, 26px); font-weight: 900; line-height: 1.4; }
+  .qimg { width: 100%; max-height: 34vh; object-fit: contain; border-radius: var(--radius); background: var(--surface); display: block; }
   .opts { display: grid; gap: 10px; }
   .opt {
     display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
@@ -146,6 +147,7 @@
     </div>
     <div class="bar"><i id="timerBar"></i></div>
     <div class="qtext" id="qText"></div>
+    <img class="qimg hidden" id="qimg" alt="문제 사진">
     <div class="opts" id="opts"></div>
     <p class="note" id="qNote" aria-live="polite"></p>
   </section>
@@ -274,8 +276,10 @@ socket.on('kicked', msg => {
   show('vJoin');
   $('joinErr').textContent = msg;
 });
+const preloaded = new Set();
 socket.on('state', st => {
   S = st;
+  if (st.preload && !preloaded.has(st.preload)) { preloaded.add(st.preload); new Image().src = st.preload; }
   applyCommon(st);
   endAt = Date.now() + (st.timeLeft || 0);
   if (joined && st.me) render(st);
@@ -332,6 +336,8 @@ function renderQuestion(st) {
   $('qNo').append(`${st.section.name} · ${st.qIdx + 1}/${st.section.count}`);
   const sm = document.createElement('small'); sm.textContent = `${q.points}점`; $('qNo').appendChild(sm);
   $('qText').textContent = q.text;
+  $('qimg').classList.toggle('hidden', !q.image);
+  if (q.image && $('qimg').getAttribute('src') !== q.image) $('qimg').setAttribute('src', q.image);
   const key = st.sIdx + ':' + st.qIdx + '|' + q.options.join('|');
   const box = $('opts');
   if (key !== lastRenderKey) {

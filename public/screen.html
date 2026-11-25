@@ -58,7 +58,13 @@
   .clock svg { width: 100%; height: 100%; transform: rotate(-90deg); }
   .clock .num { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 7vmin; font-variant-numeric: tabular-nums; }
   .clock.hurry .num { color: var(--bad); }
-  .opts { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2vmin; }
+  .qbody { flex: 1; min-height: 0; display: flex; gap: 2.4vmin; }
+  .qimg { flex: 0 0 44%; min-width: 0; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 2.4vmin; overflow: hidden; }
+  .qimg img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; display: block; }
+  .opts { flex: 1; min-width: 0; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2vmin; }
+  .qbody.has-img .opts { grid-template-columns: 1fr; gap: 1.4vmin; }
+  .qbody.has-img .opt { font-size: 3.8vmin; padding: 1.2vmin 2.4vmin; }
+  .qbody.has-img .opts .opt:last-child { grid-column: auto; }
   .opts.n3 .opt:last-child, .opts.n5 .opt:last-child { grid-column: 1 / -1; }
   .opt { position: relative; overflow: hidden; display: flex; align-items: center; gap: 2vmin; padding: 2vmin 3vmin; border-radius: 2.4vmin; background: var(--c); color: var(--on); font-size: 4.6vmin; font-weight: 700; border: .6vmin solid transparent; transition: opacity .3s, transform .3s; }
   .opt .opt-badge { font-size: 4vmin; position: relative; }
@@ -156,7 +162,10 @@
         <div class="num" id="clockNum"></div>
       </div>
     </div>
-    <div class="opts" id="opts"></div>
+    <div class="qbody" id="qbody">
+      <div class="qimg hidden" id="qimgBox"><img id="qimg" alt="문제 사진"></div>
+      <div class="opts" id="opts"></div>
+    </div>
     <div class="status" id="status"></div>
   </section>
 
@@ -198,7 +207,9 @@ socket.on('state', st => {
 function show(v) { for (const id of ['vLobby','vIntro','vQuestion','vBoard','vEnd']) $(id).classList.toggle('hidden', id !== v); }
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
+const preloaded = new Set();
 function render(st) {
+  if (st.preload && !preloaded.has(st.preload)) { preloaded.add(st.preload); new Image().src = st.preload; }
   const k = JSON.stringify(st.theme);
   if (k !== lastThemeKey) { lastThemeKey = k; GB.applyTheme(st.theme); }
   $('evt').textContent = st.title;
@@ -246,6 +257,9 @@ function renderQuestion(st) {
   $('qSec').textContent = `${st.section.name} · ${st.qIdx + 1}/${st.section.count}`;
   $('qPts').textContent = q.points + '점';
   $('qText').textContent = q.text;
+  $('qbody').classList.toggle('has-img', !!q.image);
+  $('qimgBox').classList.toggle('hidden', !q.image);
+  if (q.image && $('qimg').getAttribute('src') !== q.image) $('qimg').setAttribute('src', q.image);
   const box = $('opts');
   const key = st.sIdx + ':' + st.qIdx + '|' + q.options.join('|');
   if (key !== optKey) {
